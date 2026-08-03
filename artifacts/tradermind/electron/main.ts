@@ -1,0 +1,74 @@
+import { app, BrowserWindow, shell, Menu, session } from 'electron';
+import path from 'path';
+
+const isDev = !app.isPackaged;
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 960,
+    minHeight: 640,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false, // needed for file:// IndexedDB access
+    },
+    icon: path.join(__dirname, '../../public/icon.png'),
+    title: 'TraderMind OS',
+    backgroundColor: '#0f1117',
+    show: false,
+  });
+
+  // بارگذاری برنامه از dist
+  // __dirname در dev = electron/dist/ و در prod = app.asar/electron/dist/
+  // دو سطح بالاتر = ریشه پروژه یا ریشه asar
+  const indexPath = path.join(__dirname, '../../dist/public/index.html');
+
+  win.loadFile(indexPath).catch((err) => {
+    console.error('loadFile failed:', indexPath, err);
+  });
+
+  // نمایش پنجره پس از آماده شدن (بدون flash سفید)
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL) => {
+    console.error('LOAD FAILED:', errorCode, errorDescription, validatedURL);
+  });
+
+  win.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    console.log('[renderer]', level, message, `(${sourceId}:${line})`);
+  });
+
+  // باز کردن لینک‌های خارجی در مرورگر سیستم
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  return win;
+}
+
+// منو را مخفی کن (برنامه SPA است)
+Menu.setApplicationMenu(null);
+
+app.whenReady().then(() => {
+  // Web Speech در Electron برای شروع ضبط به مجوز media نیاز دارد.
+  // فقط میکروفون را اجازه می‌دهیم؛ دسترسی دوربین یا مجوزهای دیگر باز نمی‌شود.
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(permission === 'media');
+  });
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => permission === 'media');
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
