@@ -47,7 +47,6 @@ export function useVoiceInput({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldListenRef = useRef(false);
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sessionStartedRef = useRef(false);
   const activeLangRef = useRef<VoiceLang>(lang);
 
   // همیشه به‌روزترین callback
@@ -63,14 +62,16 @@ export function useVoiceInput({
 
   const stop = useCallback(() => {
     shouldListenRef.current = false;
-    sessionStartedRef.current = false;
     if (restartTimerRef.current) {
       clearTimeout(restartTimerRef.current);
       restartTimerRef.current = null;
     }
-    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
+    const rec = recognitionRef.current;
     recognitionRef.current = null;
+    try { rec?.stop(); } catch { /* already stopped */ }
     setIsListening(false);
+    // Only an explicit user stop ends the input session. Internal
+    // recognition reconnects must never clear the accumulated transcript.
     onEndRef.current?.();
   }, []);
 
@@ -80,8 +81,11 @@ export function useVoiceInput({
 
     if (shouldListenRef.current) return;
     shouldListenRef.current = true;
-    sessionStartedRef.current = false;
     activeLangRef.current = overrideLang ?? lang;
+    // This is the only start callback for the whole user session. Chromium
+    // may emit several native `onstart` events while reconnecting after a
+    // pause; those are not new typing sessions and must not reset the text.
+    onStartRef.current?.();
 
     const startRecognition = () => {
       if (!shouldListenRef.current) return;
@@ -96,10 +100,6 @@ export function useVoiceInput({
 
       rec.onstart = () => {
         setIsListening(true);
-        if (!sessionStartedRef.current) {
-          sessionStartedRef.current = true;
-          onStartRef.current?.();
-        }
       };
 
       rec.onresult = (e) => {
@@ -135,8 +135,6 @@ export function useVoiceInput({
         recognitionRef.current = null;
         if (!shouldListenRef.current) {
           setIsListening(false);
-          sessionStartedRef.current = false;
-          onEndRef.current?.();
           return;
         }
         // بعضی نسخه‌های Chrome/Electron حتی در continuous بعد از مکث کوتاه
@@ -144,7 +142,7 @@ export function useVoiceInput({
         restartTimerRef.current = setTimeout(() => {
           restartTimerRef.current = null;
           startRecognition();
-        }, 120);
+        }, 700);
       };
 
       recognitionRef.current = rec;
@@ -154,7 +152,7 @@ export function useVoiceInput({
           restartTimerRef.current = setTimeout(() => {
             restartTimerRef.current = null;
             startRecognition();
-          }, 250);
+          }, 700);
         }
       }
     };
@@ -170,7 +168,9 @@ export function useVoiceInput({
   useEffect(() => () => {
     shouldListenRef.current = false;
     if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
-    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
+    const rec = recognitionRef.current;
+    recognitionRef.current = null;
+    try { rec?.stop(); } catch { /* already stopped */ }
   }, []);
 
   return { isListening, isSupported, start, stop, toggle };
