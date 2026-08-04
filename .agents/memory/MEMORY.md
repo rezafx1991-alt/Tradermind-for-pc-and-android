@@ -1,0 +1,2 @@
+- [Release packaging](release-packaging.md) — Windows installer and Android APK are built on GitHub Actions; the Linux workspace validates web/Capacitor builds locally.
+- [GitHub credentials](github-credentials.md) — use the Replit GitHub connection; never request or store a personal token in chat or project files.
