@@ -4,6 +4,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { VoiceMicButton } from '@/components/ui/voice-mic-button';
 import { getStoredVoiceLang } from '@/hooks/useVoiceInput';
 import type { VoiceLang } from '@/hooks/useVoiceInput';
+import { appendVoiceTranscript } from '@/lib/voice-transcript';
 
 // این انواع input تایپ صوتی ندارند
 const SKIP_VOICE_TYPES = new Set([
@@ -54,7 +55,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       const el = innerRef.current;
       if (!el) return;
       if (isFinal) {
-        finalTextRef.current = `${finalTextRef.current} ${text}`.trim();
+        finalTextRef.current = appendVoiceTranscript(finalTextRef.current, text);
         interimTextRef.current = '';
       } else {
         interimTextRef.current = text;

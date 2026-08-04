@@ -92,6 +92,7 @@ export function useVoiceInput({
       rec.continuous = true;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
+      const emittedFinalResults = new Map<number, string>();
 
       rec.onstart = () => {
         setIsListening(true);
@@ -102,10 +103,20 @@ export function useVoiceInput({
       };
 
       rec.onresult = (e) => {
-        const result = e.results[e.resultIndex] ?? e.results[e.results.length - 1];
-        if (!result) return;
-        const transcript = result[0].transcript.trim();
-        if (transcript) onResultRef.current(transcript, result.isFinal);
+        // Process every changed result. Some Electron/Chromium versions
+        // resend the same final result, so suppress an identical result index
+        // within this recognition instance before it reaches the input.
+        for (let index = e.resultIndex; index < e.results.length; index += 1) {
+          const result = e.results[index];
+          if (!result) continue;
+          const transcript = result[0].transcript.trim();
+          if (!transcript) continue;
+          if (result.isFinal) {
+            if (emittedFinalResults.get(index) === transcript) continue;
+            emittedFinalResults.set(index, transcript);
+          }
+          onResultRef.current(transcript, result.isFinal);
+        }
       };
 
       rec.onerror = (e) => {

@@ -4,6 +4,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { VoiceMicButton } from '@/components/ui/voice-mic-button';
 import { getStoredVoiceLang } from '@/hooks/useVoiceInput';
 import type { VoiceLang } from '@/hooks/useVoiceInput';
+import { appendVoiceTranscript } from '@/lib/voice-transcript';
 
 export interface TextareaProps extends React.ComponentProps<'textarea'> {
   disableVoice?: boolean;
@@ -46,7 +47,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       const el = innerRef.current;
       if (!el) return;
       if (isFinal) {
-        finalTextRef.current = `${finalTextRef.current} ${text}`.trim();
+        finalTextRef.current = appendVoiceTranscript(finalTextRef.current, text);
         interimTextRef.current = '';
       } else {
         interimTextRef.current = text;
