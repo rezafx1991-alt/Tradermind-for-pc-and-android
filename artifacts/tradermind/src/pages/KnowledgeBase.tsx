@@ -524,7 +524,7 @@ function FeedbackDialog({ note, onClose, onSubmit }: { note: KnowledgeNote | nul
             </button>
           ))}
         </div>
-        <Textarea voice={false} value={text} onChange={e => setText(e.target.value)} placeholder="توضیح اضافی (اختیاری)..." rows={2} className="mt-2" />
+        <Textarea value={text} onChange={e => setText(e.target.value)} placeholder="توضیح اضافی (اختیاری)..." rows={2} className="mt-2" />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>انصراف</Button>
           <Button onClick={() => { if (rating) onSubmit(note.id, rating, text); onClose(); }} disabled={!rating}>ثبت بازخورد</Button>

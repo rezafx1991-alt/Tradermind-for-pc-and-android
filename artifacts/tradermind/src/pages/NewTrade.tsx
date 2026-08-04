@@ -144,18 +144,9 @@ const EMOTIONS = [
 
 // ── کامپوننت انتخاب نماد با جستجو ──────────────────────────────────────────
 function SymbolSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [customSymbols, setCustomSymbols] = useState(getCustomSymbols);
   const [customInput, setCustomInput] = useState('');
   const allSymbols = [...TRADING_SYMBOLS, ...customSymbols];
-
-  const filtered = search.length > 0
-    ? allSymbols.filter(s =>
-        s.value.includes(search.toUpperCase()) ||
-        s.label.toLowerCase().includes(search.toLowerCase())
-      ).slice(0, 30)
-    : allSymbols.slice(0, 40);
 
   const displayValue = value || '';
 
@@ -163,40 +154,17 @@ function SymbolSelector({ value, onChange }: { value: string; onChange: (v: stri
     <div className="space-y-1">
       <div className="relative">
         <Input
-          placeholder="جستجو یا وارد کردن نماد (مثلاً EURUSD، BTCUSDT، XAUUSD)"
-          value={search || displayValue}
-          onFocus={() => { setOpen(true); setSearch(''); }}
+          placeholder="وارد کردن نماد (مثلاً EURUSD، BTCUSDT، XAUUSD)"
+          value={displayValue}
           onChange={e => {
             const v = e.target.value.toUpperCase();
-            setSearch(v);
             onChange(v);
-            setOpen(true);
           }}
-          onBlur={() => setTimeout(() => setOpen(false), 200)}
           className="text-lg font-bold uppercase"
           autoComplete="off"
         />
-        {open && filtered.length > 0 && (
-          <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg overflow-y-auto max-h-56">
-            {filtered.map(sym => (
-              <button
-                key={sym.value}
-                type="button"
-                className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex justify-between items-center gap-2"
-                onMouseDown={() => {
-                  onChange(sym.value);
-                  setSearch('');
-                  setOpen(false);
-                }}
-              >
-                <span className="font-semibold">{sym.value}</span>
-                <span className="text-muted-foreground text-xs truncate">{sym.label.includes('—') ? sym.label.split('—')[1].trim() : sym.market}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
-      {displayValue && !search && (
+      {displayValue && (
         <p className="text-xs text-muted-foreground">
           {allSymbols.find(s => s.value === displayValue)?.market || 'نماد سفارشی'}
           {' • '}
@@ -215,7 +183,7 @@ function SymbolSelector({ value, onChange }: { value: string; onChange: (v: stri
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
             }`}
-            onClick={() => { onChange(sym.value); setSearch(''); setOpen(false); }}
+            onClick={() => onChange(sym.value)}
           >
             {sym.value} <span className="opacity-70">({sym.label})</span>
           </button>

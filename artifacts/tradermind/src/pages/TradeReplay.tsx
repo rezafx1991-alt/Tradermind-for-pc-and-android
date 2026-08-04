@@ -303,12 +303,12 @@ function DecisionPanel({ onSubmit, hasOpenPosition, coachingMode, lastCandle }: 
         <div className="space-y-2 border-r border-border pr-2">
           <div>
             <label className="text-[10px] text-muted-foreground">چه می‌بینید؟</label>
-            <Textarea voice={false} value={whatISee} onChange={e => setWhatISee(e.target.value)} placeholder="ساختار بازار، سطوح کلیدی..." rows={2} className="text-xs mt-0.5" />
+            <Textarea value={whatISee} onChange={e => setWhatISee(e.target.value)} placeholder="ساختار بازار، سطوح کلیدی..." rows={2} className="text-xs mt-0.5" />
           </div>
           {(action === 'long' || action === 'short') && (
             <div>
               <label className="text-[10px] text-muted-foreground">چرا وارد می‌شوید؟</label>
-              <Textarea voice={false} value={whyEnter} onChange={e => setWhyEnter(e.target.value)} placeholder="دلیل ورود..." rows={2} className="text-xs mt-0.5" />
+              <Textarea value={whyEnter} onChange={e => setWhyEnter(e.target.value)} placeholder="دلیل ورود..." rows={2} className="text-xs mt-0.5" />
             </div>
           )}
           <div>
@@ -991,7 +991,7 @@ function DatasetImportDialog({ open, onClose, onImported }: {
               </div>
               <div className="mt-2">
                 <p className="text-[10px] text-muted-foreground mb-1">یا ورودی متنی:</p>
-                <Textarea voice={false} value={csvContent} onChange={e => setCsvContent(e.target.value)} placeholder="timestamp,open,high,low,close&#10;..." rows={4} className="text-xs font-mono" />
+                <Textarea value={csvContent} onChange={e => setCsvContent(e.target.value)} placeholder="timestamp,open,high,low,close&#10;..." rows={4} className="text-xs font-mono" />
               </div>
             </div>
           )}
