@@ -55,8 +55,8 @@ export const tradeService = {
       ...defaults,
       ...data,
       id,
-      accountId: data.accountId ?? null,
-      boxId: data.boxId ?? null,
+      accountId: data.accountId ?? defaults.accountId ?? null,
+      boxId: data.boxId ?? defaults.boxId ?? null,
     };
 
     await db.transaction('rw', [db.trades, db.tradeEvents, db.tradeVersions], async () => {

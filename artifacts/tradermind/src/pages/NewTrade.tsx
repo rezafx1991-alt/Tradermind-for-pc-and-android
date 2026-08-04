@@ -587,10 +587,12 @@ export default function NewTrade() {
               <SymbolSelector
                 value={trade.symbol}
                 onChange={v => {
-                  handleChange('symbol', v.toUpperCase());
-                  // auto-set market based on symbol
-                  const found = TRADING_SYMBOLS.find(s => s.value === v.toUpperCase());
-                  if (found && !trade.market) handleChange('market', found.market);
+                  const symbol = v.toUpperCase();
+                  handleChange('symbol', symbol);
+                  // Keep the market in sync whenever the symbol changes,
+                  // including when replacing an existing default symbol.
+                  const found = TRADING_SYMBOLS.find(s => s.value === symbol);
+                  handleChange('market', found?.market ?? tradeMarket(symbol));
                 }}
               />
             </div>
