@@ -370,6 +370,17 @@ export default function NewTrade() {
         lastInitKey.current = `|${currentTrade.id}|${sessionId ?? ''}`;
       }
 
+      // Repair older drafts that were saved before market defaults existed.
+      // A known symbol always wins; otherwise keep a valid stored market.
+      const symbolMarket = TRADING_SYMBOLS.find(s => s.value === currentTrade!.symbol)?.market;
+      if (!currentTrade.market && (symbolMarket || currentTrade.symbol)) {
+        currentTrade = {
+          ...currentTrade,
+          market: symbolMarket ?? tradeMarket(currentTrade.symbol),
+        };
+        await tradeService.updateTrade(currentTrade.id, { market: currentTrade.market });
+      }
+
       setTrade(currentTrade);
       lastSavedRef.current = currentTrade;
 
