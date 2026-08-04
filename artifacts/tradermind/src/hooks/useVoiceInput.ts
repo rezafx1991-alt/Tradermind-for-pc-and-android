@@ -82,6 +82,9 @@ export function useVoiceInput({
     if (shouldListenRef.current) return;
     shouldListenRef.current = true;
     activeLangRef.current = overrideLang ?? lang;
+    // The icon represents the user's manual on/off choice, not a transient
+    // native recognition connection. Keep it active across silence/reconnect.
+    setIsListening(true);
     // This is the only start callback for the whole user session. Chromium
     // may emit several native `onstart` events while reconnecting after a
     // pause; those are not new typing sessions and must not reset the text.
@@ -137,6 +140,9 @@ export function useVoiceInput({
           setIsListening(false);
           return;
         }
+        // Stay visibly active until the user presses the mic button again.
+        // Native SpeechRecognition may end briefly after silence.
+        setIsListening(true);
         // بعضی نسخه‌های Chrome/Electron حتی در continuous بعد از مکث کوتاه
         // onend می‌فرستند؛ با تأخیر کم همان نشست را ادامه می‌دهیم.
         restartTimerRef.current = setTimeout(() => {

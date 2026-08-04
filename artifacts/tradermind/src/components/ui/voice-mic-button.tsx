@@ -51,12 +51,13 @@ export function VoiceMicButton({
       <button
         type="button"
         aria-label={isListening ? 'توقف تایپ صوتی' : 'تایپ صوتی'}
+        aria-pressed={isListening}
         title={
           !isSupported
             ? 'مرورگر شما از تایپ صوتی پشتیبانی نمی‌کند'
             : isListening
-              ? 'کلیک کنید تا متوقف شود'
-              : 'کلیک کنید تا تایپ صوتی شروع شود'
+              ? 'تایپ صوتی فعال است؛ برای خاموش‌کردن کلیک کنید'
+              : 'برای فعال‌کردن تایپ صوتی کلیک کنید'
         }
         onClick={handleMicClick}
         disabled={!isSupported}
