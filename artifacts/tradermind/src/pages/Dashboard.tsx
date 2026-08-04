@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { formatDateFa } from "../lib/i18n";
 import { getByDay, getBySession } from "../services/performanceService";
+import { useAppStore } from "../store/useAppStore";
+import { getTradingDateKey, getTradingDateRange, getTradingMonthKey } from "../lib/tradingTime";
 
 // ══════════════════════════════════════════════════════════════════
 // ثوابت و نوع‌ها
@@ -92,7 +94,7 @@ function getGreetingSub(): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
+  return getTradingDateKey(Date.now());
 }
 
 function moodLabel(v: number): string {
@@ -165,6 +167,8 @@ async function loadDashboardData(): Promise<DashboardData> {
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const tradingTimeMode = useAppStore(s => s.tradingTimeMode);
+  const brokerUtcOffsetMinutes = useAppStore(s => s.brokerUtcOffsetMinutes);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [rangeKey, setRangeKey] = useState<RangeKey>("week");
@@ -192,13 +196,13 @@ export default function Dashboard() {
   const rangedTrades = useMemo(() => {
     if (!data) return [];
     if (rangeKey === "custom") {
-      const from = new Date(customFrom + "T00:00:00").getTime();
-      const to   = new Date(customTo   + "T23:59:59").getTime();
+      const from = getTradingDateRange(customFrom).from;
+      const to   = getTradingDateRange(customTo).to;
       return filterTradesByRange(data.trades, from, to);
     }
     const { from, to } = getDateRange(rangeKey);
     return filterTradesByRange(data.trades, from, to);
-  }, [data, rangeKey, customFrom, customTo]);
+  }, [data, rangeKey, customFrom, customTo, tradingTimeMode, brokerUtcOffsetMinutes]);
 
   // ── Stats بازه انتخابی
   const rangedStats = useMemo(() => {
@@ -238,7 +242,7 @@ export default function Dashboard() {
       cum += t.profitLoss || 0;
       return { index: i + 1, symbol: t.symbol, pnl: +(t.profitLoss || 0).toFixed(2), cumulative: +cum.toFixed(2) };
     });
-  }, [data]);
+  }, [data, tradingTimeMode, brokerUtcOffsetMinutes]);
 
   // ── Insights (فقط اگه داده کافی باشه)
   const insights = useMemo((): InsightCard[] => {
@@ -333,7 +337,7 @@ export default function Dashboard() {
     // ماهانه P/L
     const monthMap = new Map<string, number>();
     allClosed.forEach(t => {
-      const key = new Date(t.closedAt ?? t.openedAt).toISOString().slice(0, 7);
+      const key = getTradingMonthKey(t.closedAt ?? t.openedAt);
       monthMap.set(key, (monthMap.get(key) ?? 0) + (t.profitLoss ?? 0));
     });
     const FA_MONTHS = ["ژانویه","فوریه","مارس","آوریل","مه","ژوئن","ژوئیه","آگوست","سپتامبر","اکتبر","نوامبر","دسامبر"];
@@ -382,7 +386,7 @@ export default function Dashboard() {
       .slice(0, 7);
 
     return { monthlyPnl, dayData, sessionData, strategyData };
-  }, [data]);
+  }, [data, tradingTimeMode, brokerUtcOffsetMinutes]);
 
   // ── وضعیت: کاربر جدید؟
   const isNewUser = data && data.strategies.length === 0 && data.trades.length === 0 && data.journals.length === 0;

@@ -8,6 +8,7 @@
 import { Trade, DailyJournal, Strategy } from '../db/database';
 import { getAllTradesForAnalytics } from '../core/repositories/tradeRepository';
 import { isWin, isLoss, isClosed } from '../lib/tradeHelpers';
+import { getTradingDateKey } from '../lib/tradingTime';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ async function computeAnalyticsCache(): Promise<CachedAnalytics> {
   // Daily stats
   const byDay = new Map<string, { trades: Trade[] }>();
   for (const t of closed) {
-    const date = new Date(t.openedAt).toISOString().slice(0, 10);
+    const date = getTradingDateKey(t.openedAt);
     if (!byDay.has(date)) byDay.set(date, { trades: [] });
     byDay.get(date)!.trades.push(t);
   }

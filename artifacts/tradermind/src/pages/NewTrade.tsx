@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import PreTradeInsightPanel from "../components/PreTradeInsightPanel";
 import ScreenshotManager from "../components/ScreenshotManager";
 import { TradeScreenshot } from "../types/screenshot";
+import { getTradingDateTimeInput, parseTradingDateTimeInput } from "../lib/tradingTime";
 
 const MARKETS = ['Forex', 'Crypto', 'Indices', 'Stocks', 'Commodities', 'Other'];
 
@@ -457,15 +458,13 @@ export default function NewTrade() {
   };
 
   const handleDateChange = (field: 'openedAt' | 'closedAt', dateString: string) => {
-    const timestamp = new Date(dateString).getTime();
+    const timestamp = parseTradingDateTimeInput(dateString);
+    if (Number.isNaN(timestamp)) return;
     handleChange(field, timestamp);
   };
 
   const formatDateForInput = (timestamp: number | null) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().slice(0, 16);
+    return getTradingDateTimeInput(timestamp);
   };
 
   const computeRMultiple = () => {

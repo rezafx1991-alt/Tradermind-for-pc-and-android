@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "../lib/utils";
+import { DISPLAY_VERSION } from "../constants/version";
 import { Button } from "./ui/button";
 import { t } from "../lib/i18n";
 
@@ -529,7 +530,7 @@ export function Sidebar() {
             text-muted-foreground
             text-center
           ">
-            TraderMind • v1.2.6
+            TraderMind • {DISPLAY_VERSION}
           </p>
         </div>
 

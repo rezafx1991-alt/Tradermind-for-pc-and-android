@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { useLocation } from "wouter";
 import {
-  Moon, Sun, Monitor, Type, Globe, Activity, BookOpen,
+  Moon, Sun, Monitor, Type, Globe, Activity, BookOpen, Clock,
   LayoutDashboard, HardDrive, Info, Database, Trash2,
   Plus, X, Download, Upload, WifiOff, ShieldCheck, Lock, LockOpen,
   Bell, RefreshCw, Smile, KeyRound, Eye, EyeOff, CheckCircle2, AlertTriangle, SlidersHorizontal
@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 import { t } from "../lib/i18n";
+import { formatTradingOffset } from "../lib/tradingTime";
 
 // ─────────────────────────────────────────────
 // کامپوننت‌های کمکی
@@ -394,6 +395,7 @@ export default function Settings() {
       dashShowAdherence: s.dashShowAdherence,
       defaultAccountId: s.defaultAccountId, defaultTradingBoxId: s.defaultTradingBoxId,
       defaultSymbol: s.defaultSymbol, defaultMarket: s.defaultMarket,
+      tradingTimeMode: s.tradingTimeMode, brokerUtcOffsetMinutes: s.brokerUtcOffsetMinutes,
       // setters
       setTheme: s.setTheme, setFontSize: s.setFontSize,
       setAnalysisAutosave: s.setAnalysisAutosave, setAnalysisShowNextStep: s.setAnalysisShowNextStep,
@@ -408,6 +410,7 @@ export default function Settings() {
       setDashShowAdherence: s.setDashShowAdherence,
       setDefaultAccountId: s.setDefaultAccountId, setDefaultTradingBoxId: s.setDefaultTradingBoxId,
       setDefaultSymbol: s.setDefaultSymbol, setDefaultMarket: s.setDefaultMarket,
+      setTradingTimeMode: s.setTradingTimeMode, setBrokerUtcOffsetMinutes: s.setBrokerUtcOffsetMinutes,
       resetToDefaults: s.resetToDefaults,
     }))
   );
@@ -575,6 +578,48 @@ export default function Settings() {
             </SelectContent>
           </Select>
         </SettingRow>
+        <SettingRow
+          label="مبنای ساعت معاملات"
+          description="گزارش‌ها و تحلیل ساعت/روز بر اساس این مبنا دسته‌بندی می‌شوند"
+        >
+          <Select
+            value={store.tradingTimeMode}
+            onValueChange={value => store.setTradingTimeMode(value as 'device' | 'broker')}
+          >
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="device">ساعت دستگاه</SelectItem>
+              <SelectItem value="broker">ساعت بروکر</SelectItem>
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        {store.tradingTimeMode === 'broker' && (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Clock className="w-4 h-4 text-primary" />
+              اختلاف ساعت بروکر با UTC
+            </div>
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                min={-720}
+                max={840}
+                step={30}
+                value={store.brokerUtcOffsetMinutes}
+                onChange={e => store.setBrokerUtcOffsetMinutes(Number(e.target.value))}
+                className="w-32"
+                dir="ltr"
+              />
+              <span className="text-sm font-medium" dir="ltr">
+                دقیقه ({formatTradingOffset(store.brokerUtcOffsetMinutes)})
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              برای ساعت بروکر UTC+3:30 عدد <span className="font-semibold" dir="ltr">210</span> را وارد کنید.
+              این تغییر فقط مبنای نمایش و گزارش‌ها را عوض می‌کند و زمان خام معاملات و بکاپ‌ها را تغییر نمی‌دهد.
+            </p>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground rounded-md bg-muted/30 border p-3">
           اگر حساب یا باکس انتخاب‌شده بعداً حذف شود، معامله جدید بدون آن مقدار ایجاد می‌شود و اطلاعات قبلی شما تغییر نمی‌کند.
         </p>

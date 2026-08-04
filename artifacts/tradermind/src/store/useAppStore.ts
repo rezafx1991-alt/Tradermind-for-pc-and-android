@@ -7,6 +7,7 @@ import { persist } from 'zustand/middleware';
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type FontSize = 'sm' | 'md' | 'lg';
 export type Language = 'fa'; // در آینده: | 'en'
+export type TradingTimeMode = 'device' | 'broker';
 
 export interface AppSettings {
   // ظاهر
@@ -25,6 +26,10 @@ export interface AppSettings {
   defaultTradingBoxId: string | null;
   defaultSymbol: string;
   defaultMarket: string;
+
+  // مبنای زمانی ثبت و گزارش معاملات
+  tradingTimeMode: TradingTimeMode;
+  brokerUtcOffsetMinutes: number;
 
   // تنظیمات تحلیل
   analysisAutosave: boolean;
@@ -59,6 +64,8 @@ interface AppActions {
   setDefaultTradingBoxId: (id: string | null) => void;
   setDefaultSymbol: (symbol: string) => void;
   setDefaultMarket: (market: string) => void;
+  setTradingTimeMode: (mode: TradingTimeMode) => void;
+  setBrokerUtcOffsetMinutes: (minutes: number) => void;
   // تحلیل
   setAnalysisAutosave: (v: boolean) => void;
   setAnalysisShowNextStep: (v: boolean) => void;
@@ -96,6 +103,8 @@ const defaults: AppSettings = {
   defaultTradingBoxId: null,
   defaultSymbol: 'XAUUSD',
   defaultMarket: 'Commodities',
+  tradingTimeMode: 'device',
+  brokerUtcOffsetMinutes: 0,
   // تحلیل
   analysisAutosave: true,
   analysisShowNextStep: true,
@@ -134,6 +143,10 @@ export const useAppStore = create<AppSettings & AppActions>()(
       setDefaultTradingBoxId: (defaultTradingBoxId) => set({ defaultTradingBoxId }),
       setDefaultSymbol: (defaultSymbol) => set({ defaultSymbol }),
       setDefaultMarket: (defaultMarket) => set({ defaultMarket }),
+      setTradingTimeMode: (tradingTimeMode) => set({ tradingTimeMode }),
+      setBrokerUtcOffsetMinutes: (brokerUtcOffsetMinutes) => set({
+        brokerUtcOffsetMinutes: Math.max(-720, Math.min(840, Math.round(brokerUtcOffsetMinutes / 30) * 30)),
+      }),
 
       setAnalysisAutosave: (v) => set({ analysisAutosave: v }),
       setAnalysisShowNextStep: (v) => set({ analysisShowNextStep: v }),
@@ -175,6 +188,10 @@ export const useAppStore = create<AppSettings & AppActions>()(
         defaultTradingBoxId: typeof persisted?.defaultTradingBoxId === 'string' ? persisted.defaultTradingBoxId : defaults.defaultTradingBoxId,
         defaultSymbol: typeof persisted?.defaultSymbol === 'string' ? persisted.defaultSymbol : defaults.defaultSymbol,
         defaultMarket: typeof persisted?.defaultMarket === 'string' ? persisted.defaultMarket : defaults.defaultMarket,
+        tradingTimeMode: persisted?.tradingTimeMode === 'broker' ? 'broker' : defaults.tradingTimeMode,
+        brokerUtcOffsetMinutes: Number.isFinite(Number(persisted?.brokerUtcOffsetMinutes))
+          ? Math.max(-720, Math.min(840, Math.round(Number(persisted.brokerUtcOffsetMinutes) / 30) * 30))
+          : defaults.brokerUtcOffsetMinutes,
       }),
     }
   )
