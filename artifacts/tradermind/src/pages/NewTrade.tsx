@@ -685,14 +685,14 @@ export default function NewTrade() {
                 </Button>
               </div>
               <Select value={(trade as any).accountId || 'none'} onValueChange={v => handleChange('accountId' as any, v === 'none' ? null : v)}>
-                <SelectTrigger>
+                <SelectTrigger dir="rtl" className="h-auto min-h-9 whitespace-normal [&>span]:!line-clamp-none [&>span]:!whitespace-normal">
                   <SelectValue placeholder="انتخاب حساب (اختیاری)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">بدون حساب</SelectItem>
                   {accounts.map(a => (
                     <SelectItem key={a.id} value={a.id}>
-                      <span className="flex items-center gap-2">
+                      <span className="flex min-w-0 items-center gap-2 whitespace-normal break-words text-right" dir="rtl">
                         <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
                         {a.name}{a.broker ? ` — ${a.broker}` : ''}
                       </span>

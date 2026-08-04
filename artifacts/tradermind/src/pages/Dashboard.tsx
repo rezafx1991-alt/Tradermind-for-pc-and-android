@@ -799,8 +799,8 @@ export default function Dashboard() {
                       <CreditCard className="w-4 h-4" style={{ color: acc.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{acc.name}</p>
-                      <p className="text-xs text-muted-foreground">{acc.broker || 'بدون بروکر'} · {accTrades.length} معامله</p>
+                      <p className="font-semibold text-sm whitespace-normal break-words leading-5" dir="rtl">{acc.name}</p>
+                      <p className="text-xs text-muted-foreground whitespace-normal break-words leading-5" dir="rtl">{acc.broker || 'بدون بروکر'} · {accTrades.length} معامله</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className={`text-sm font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>

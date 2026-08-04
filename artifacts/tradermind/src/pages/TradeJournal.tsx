@@ -512,13 +512,13 @@ export default function TradeJournal() {
                   <CreditCard className="w-3 h-3" /> حساب معاملاتی
                 </div>
                 <Select value={filters.accountId} onValueChange={v => handleFilterChange('accountId', v)}>
-                  <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectTrigger dir="rtl" className="h-auto min-h-9 bg-background whitespace-normal [&>span]:!line-clamp-none [&>span]:!whitespace-normal"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">همه حساب‌ها</SelectItem>
                     <SelectItem value="none_set">بدون حساب</SelectItem>
                     {accounts.map(a => (
                       <SelectItem key={a.id} value={a.id}>
-                        <span className="flex items-center gap-2">
+                        <span className="flex min-w-0 items-center gap-2 whitespace-normal break-words text-right" dir="rtl">
                           <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
                           {a.name}
                         </span>
