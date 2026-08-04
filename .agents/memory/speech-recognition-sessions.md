@@ -7,4 +7,4 @@ Treat one user microphone click as one transcript session. Native recognition `o
 
 **Why:** Chromium/Electron can stop and recreate its native speech-recognition instance after silence; treating that reconnect as a new session deletes or duplicates earlier words.
 
-**How to apply:** Keep transcript buffers outside the native recognition instance, deduplicate final chunks, and invoke input `onStart`/`onEnd` only for explicit user actions.
+**How to apply:** Keep transcript buffers outside the native recognition instance, deduplicate final chunks, and invoke input `onStart`/`onEnd` only for explicit user actions. On Android native speech, `start()` resolves immediately when partial results are enabled; use `listeningState=stopped` as the utterance boundary.

@@ -35,6 +35,16 @@ export const tradeService = {
         market: stored?.defaultMarket ?? null,
       };
     } catch { /* تنظیمات خراب نباید ثبت معامله را متوقف کند */ }
+
+    // تنظیمات ممکن است به حساب یا باکسی اشاره کنند که بعداً حذف شده است.
+    // در این حالت معامله جدید باید بدون شناسه‌ی نامعتبر ساخته شود.
+    const [defaultAccount, defaultBox] = await Promise.all([
+      defaults.accountId ? db.accounts.get(defaults.accountId) : Promise.resolve(undefined),
+      defaults.boxId ? db.tradingBoxes.get(defaults.boxId) : Promise.resolve(undefined),
+    ]);
+    defaults.accountId = defaultAccount?.id ?? null;
+    defaults.boxId = defaultBox?.id ?? null;
+
     const trade: Trade = {
       sessionId: null, strategyId: null, symbol: '', market: null,
       direction: 'long', entryPrice: 0, exitPrice: null, stopLoss: 0,
