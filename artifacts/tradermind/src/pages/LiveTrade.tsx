@@ -713,7 +713,7 @@ export default function LiveTrade() {
                   <div className="space-y-3 pt-2 border-t">
                     <div>
                       <Label className="text-xs">رفتار انتظاری بازار</Label>
-                      <Textarea
+                      <Textarea voice={false}
                         value={planBehavior}
                         onChange={e => setPlanBehavior(e.target.value)}
                         placeholder="قیمت باید به ناحیه X رسیده و ادامه دهد..."
@@ -723,7 +723,7 @@ export default function LiveTrade() {
                     </div>
                     <div>
                       <Label className="text-xs">شرط باطل‌شدن (Invalidation)</Label>
-                      <Textarea
+                      <Textarea voice={false}
                         value={planInvalidation}
                         onChange={e => setPlanInvalidation(e.target.value)}
                         placeholder="اگر قیمت بالای X بسته شد..."
@@ -733,7 +733,7 @@ export default function LiveTrade() {
                     </div>
                     <div>
                       <Label className="text-xs">تأییدیه انتظاری</Label>
-                      <Textarea
+                      <Textarea voice={false}
                         value={planConfirmation}
                         onChange={e => setPlanConfirmation(e.target.value)}
                         placeholder="کندل تأیید در تایم‌فریم پایین‌تر..."

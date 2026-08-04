@@ -16,6 +16,8 @@ const SKIP_VOICE_TYPES = new Set([
 
 export interface InputProps extends React.ComponentProps<'input'> {
   disableVoice?: boolean;
+  /** میکروفون برای inputهای کوتاه عمداً opt-in است. */
+  voice?: boolean;
 }
 
 // تنظیم مقدار input از طریق native setter تا React (و react-hook-form) onChange فعال شود
@@ -26,7 +28,7 @@ function setInputValue(el: HTMLInputElement, value: string) {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, disableVoice, ...props }, ref) => {
+  ({ className, type, disableVoice, voice = false, ...props }, ref) => {
     const innerRef = React.useRef<HTMLInputElement>(null);
     const [activeLang, setActiveLang] = React.useState<VoiceLang>(getStoredVoiceLang);
 
@@ -75,7 +77,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       toggle(lang);
     }, [toggle]);
 
-    const showVoice = !disableVoice && !SKIP_VOICE_TYPES.has(type ?? 'text');
+    const showVoice = voice && !disableVoice && !SKIP_VOICE_TYPES.has(type ?? 'text');
 
     // بدون دکمه صوتی برای انواع خاص
     if (!showVoice) {

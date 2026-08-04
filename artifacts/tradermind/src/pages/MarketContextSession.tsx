@@ -803,11 +803,11 @@ export default function MarketContextSessionPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">سناریوی مورد انتظار</label>
-                <Textarea value={session.expectedScenario ?? ''} onChange={e => handleFieldUpdate({ expectedScenario: e.target.value })} placeholder="انتظار دارید بازار چه مسیری طی کند؟" rows={2} className="mt-1 text-xs resize-none" />
+                <Textarea voice={false} value={session.expectedScenario ?? ''} onChange={e => handleFieldUpdate({ expectedScenario: e.target.value })} placeholder="انتظار دارید بازار چه مسیری طی کند؟" rows={2} className="mt-1 text-xs resize-none" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">شرایط ابطال</label>
-                <Textarea value={session.invalidationConditions ?? ''} onChange={e => handleFieldUpdate({ invalidationConditions: e.target.value })} placeholder="چه اتفاقی تحلیل شما را نقض می‌کند؟" rows={2} className="mt-1 text-xs resize-none" />
+                <Textarea voice={false} value={session.invalidationConditions ?? ''} onChange={e => handleFieldUpdate({ invalidationConditions: e.target.value })} placeholder="چه اتفاقی تحلیل شما را نقض می‌کند؟" rows={2} className="mt-1 text-xs resize-none" />
               </div>
             </CardContent>
           </Card>
@@ -1393,15 +1393,15 @@ export default function MarketContextSessionPage() {
                 <p className="text-xs font-medium text-muted-foreground">یادگیری پس از تصمیم (اختیاری)</p>
                 <div>
                   <label className="text-xs text-muted-foreground">مهم‌ترین اطلاعاتی که بر این تصمیم تأثیر گذاشت</label>
-                  <Textarea value={decisionImportant} onChange={e => setDecisionImportant(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
+                  <Textarea voice={false} value={decisionImportant} onChange={e => setDecisionImportant(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">اطلاعاتی که نادیده گرفتید</label>
-                  <Textarea value={decisionIgnored} onChange={e => setDecisionIgnored(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
+                  <Textarea voice={false} value={decisionIgnored} onChange={e => setDecisionIgnored(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">چه چیزی این ایده را ابطال می‌کند؟</label>
-                  <Textarea value={decisionInvalidation} onChange={e => setDecisionInvalidation(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
+                  <Textarea voice={false} value={decisionInvalidation} onChange={e => setDecisionInvalidation(e.target.value)} rows={2} className="mt-1 text-xs resize-none" />
                 </div>
               </div>
 

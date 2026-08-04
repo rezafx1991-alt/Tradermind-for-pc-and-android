@@ -1,4 +1,7 @@
 import JSZip from 'jszip';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { db, Trade, Strategy, Phase, Step, Rule, AnalysisSession, DailyJournal } from '../db/database';
 import { securityService } from '../security/securityService';
 import { APP_VERSION, DB_VERSION, BACKUP_FORMAT_VERSION, SCHEMA_VERSION } from '../constants/version';
@@ -269,7 +272,44 @@ async function buildAndDownloadGz(
  * در دسکتاپ و مرورگرهای بدون Web Share، دانلود معمولی با زمان کافی برای
  * خواندن Blob انجام می‌شود.
  */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
 async function deliverFile(blob: Blob, filename: string): Promise<void> {
+  const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  if (isAndroidNative) {
+    const path = `TraderMind/Backups/${filename}`;
+    const base64 = await blobToBase64(blob);
+    await Filesystem.writeFile({
+      path,
+      directory: Directory.Documents,
+      data: base64,
+      recursive: true,
+    });
+    const { uri } = await Filesystem.getUri({ path, directory: Directory.Documents });
+    // The file is already saved before opening Share. If the user closes the
+    // share sheet, the backup remains in Documents/TraderMind/Backups.
+    try {
+      await Share.share({
+        title: 'پشتیبان TraderMind',
+        text: `فایل در Documents/TraderMind/Backups ذخیره شد. در صورت نیاز آن را با Files یا Downloads به محل دیگری منتقل کنید.`,
+        files: [uri],
+        dialogTitle: 'ذخیره یا ارسال نسخه پشتیبان',
+      });
+    } catch {
+      // Cancelling the share sheet must not turn a successfully saved backup
+      // into an error.
+    }
+    return;
+  }
+
   const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
   const canShareFile = typeof navigator !== 'undefined'
     && typeof navigator.share === 'function'
@@ -780,22 +820,45 @@ export const backupService = {
     await mergeTable(db.trades, data.trades || []);
     await mergeTable(db.dailyJournals, data.dailyJournals || []);
 
+    const extendedTables: Array<[any, unknown[] | undefined]> = [
+      [db.symbolProfiles, data.symbolProfiles], [db.learningAuditTrail, data.learningAuditTrail],
+      [db.profileSnapshots, data.profileSnapshots], [db.profileCorrections, data.profileCorrections],
+      [db.knowledgeNotes, data.knowledgeNotes], [db.knowledgeCategories, data.knowledgeCategories],
+      [db.replayDatasets, data.replayDatasets], [db.replaySessions, data.replaySessions],
+      [db.replayDecisions, data.replayDecisions], [db.replayPlaylists, data.replayPlaylists],
+      [db.marketContextSessions, data.marketContextSessions], [db.tradeEvents, data.tradeEvents],
+      [db.tradeVersions, data.tradeVersions], [db.chartScreenshots, data.chartScreenshots],
+      [db.riskProfiles, data.riskProfiles], [db.riskViolations, data.riskViolations],
+      [db.riskGroups, data.riskGroups], [db.performanceReviews, data.performanceReviews],
+      [db.preTradeChecklists, data.preTradeChecklists], [db.dailyFocus, data.dailyFocus],
+      [db.screenshotGroups, data.screenshotGroups], [db.visualPatterns, data.visualPatterns],
+      [db.screenshotCollections, data.screenshotCollections], [db.accounts, data.accounts],
+      [db.tradingBoxes, data.tradingBoxes],
+    ];
+    for (const [table, items] of extendedTables) {
+      if (items?.length) await mergeTable(table, items);
+    }
+    if (data.settings) this.importSettings(data.settings);
+
     return stats;
   },
 
   // ────────── پاک کردن همه داده‌ها ──────────
   async resetAll(): Promise<void> {
-    await db.transaction('rw',
-      [db.strategies, db.phases, db.steps, db.rules,
-       db.analysisSessions, db.trades, db.dailyJournals],
-      async () => {
-        await Promise.all([
-          db.strategies.clear(), db.phases.clear(), db.steps.clear(),
-          db.rules.clear(), db.analysisSessions.clear(),
-          db.trades.clear(), db.dailyJournals.clear(),
-        ]);
-      }
-    );
+    const tables = [
+      db.strategies, db.phases, db.steps, db.rules, db.analysisSessions, db.trades, db.dailyJournals,
+      db.symbolProfiles, db.learningAuditTrail, db.profileSnapshots, db.profileCorrections,
+      db.knowledgeNotes, db.knowledgeCategories, db.replayDatasets, db.replaySessions,
+      db.replayDecisions, db.replayPlaylists, db.marketContextSessions, db.tradeEvents,
+      db.tradeVersions, db.chartScreenshots, db.riskProfiles, db.riskViolations, db.riskGroups,
+      db.accounts, db.tradingBoxes, db.performanceReviews, db.preTradeChecklists, db.dailyFocus,
+      db.screenshotGroups, db.visualPatterns, db.screenshotCollections,
+    ];
+    await db.transaction('rw', tables, async () => {
+      await Promise.all(tables.map(table => table.clear()));
+    });
+    localStorage.removeItem(STORAGE_KEY_APP);
+    localStorage.removeItem('tradermind-custom-symbols');
   },
 
   // ────────── تاریخچه ──────────

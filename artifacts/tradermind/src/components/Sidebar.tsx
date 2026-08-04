@@ -529,7 +529,7 @@ export function Sidebar() {
             text-muted-foreground
             text-center
           ">
-            TraderMind • v1.0.0
+            TraderMind • v1.2.2
           </p>
         </div>
 

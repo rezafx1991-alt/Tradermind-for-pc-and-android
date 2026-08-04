@@ -336,8 +336,8 @@ export default function BackupRestore() {
             فایل پشتیبان فقط در دستگاه شما ذخیره می‌شود. هیچ اطلاعاتی به سرور ارسال نمی‌شود.
           </p>
            <p className="text-xs text-muted-foreground mt-2 rounded-md border border-primary/20 bg-primary/5 p-3">
-             در گوشی، بعد از ساخت فایل پنجره «اشتراک‌گذاری/ذخیره» باز می‌شود؛ در آن‌جا برنامه Files یا پوشه Downloads را انتخاب کنید.
-             اگر پنجره باز نشد، فایل را در پوشه Downloads با نامی که با TraderMind_Backup شروع می‌شود پیدا کنید.
+             در اندروید، فایل ابتدا به‌صورت قطعی در مسیر Documents/TraderMind/Backups ذخیره می‌شود و بعد پنجره «ذخیره یا ارسال» باز می‌شود.
+             اگر پنجره را ببندید، فایل همچنان در همان مسیر قابل مشاهده است؛ از برنامه Files وارد Documents و سپس TraderMind و Backups شوید.
            </p>
         </CardContent>
       </Card>
@@ -382,7 +382,7 @@ export default function BackupRestore() {
             بازیابی اطلاعات
           </CardTitle>
           <CardDescription>
-            اطلاعات را از یک فایل پشتیبان قبلی بازیابی کنید. فرمت‌های پشتیبانی‌شده: ZIP و JSON
+             اطلاعات را از یک فایل پشتیبان قبلی بازیابی کنید. فرمت‌های پشتیبانی‌شده: GZ، ZIP و JSON
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -396,11 +396,11 @@ export default function BackupRestore() {
               <FileArchive className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="font-medium mb-1">انتخاب فایل پشتیبان</p>
               <p className="text-sm text-muted-foreground">روی اینجا کلیک کنید یا فایل را بکشید</p>
-              <p className="text-xs text-muted-foreground mt-2">پسوند مجاز: .zip یا .json</p>
+               <p className="text-xs text-muted-foreground mt-2">پسوند مجاز: .gz، .zip یا .json</p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".zip,.json"
+                 accept=".gz,.tradermind-backup.gz,.zip,.json"
                 onChange={handleFileSelect}
                 className="hidden"
               />

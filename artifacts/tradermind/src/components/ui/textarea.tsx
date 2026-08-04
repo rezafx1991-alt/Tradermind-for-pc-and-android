@@ -8,6 +8,8 @@ import { appendVoiceTranscript } from '@/lib/voice-transcript';
 
 export interface TextareaProps extends React.ComponentProps<'textarea'> {
   disableVoice?: boolean;
+  /** کادرهای چندخطی محل پیش‌فرض تایپ صوتی هستند؛ برای خاموش‌کردن از disableVoice استفاده کنید. */
+  voice?: boolean;
 }
 
 function setTextareaValue(el: HTMLTextAreaElement, value: string) {
@@ -17,7 +19,7 @@ function setTextareaValue(el: HTMLTextAreaElement, value: string) {
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, disableVoice, ...props }, ref) => {
+  ({ className, disableVoice, voice = true, ...props }, ref) => {
     const innerRef = React.useRef<HTMLTextAreaElement>(null);
     const [activeLang, setActiveLang] = React.useState<VoiceLang>(getStoredVoiceLang);
 
@@ -88,7 +90,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
     );
 
-    if (disableVoice) {
+    if (disableVoice || !voice) {
       return <textarea className={cn(baseClass, className)} ref={mergedRef} {...props} />;
     }
 
