@@ -67,6 +67,9 @@ function navigateWithoutGuard(to: string): void {
 
 export function NavigationGuardProvider({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  // Electron uses hash routing. Its internal hash navigation must never be
+  // interpreted as browser Back navigation or as an app-exit request.
+  const isElectronRuntime = window.location.protocol === 'file:' || window.electronAPI?.isElectron === true;
   const guardRef = useRef<NavigationGuardRegistration | null>(null);
   const currentLocationRef = useRef(location);
   const currentUrlRef = useRef(window.location.href);
@@ -155,6 +158,10 @@ export function NavigationGuardProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const onPopState = () => {
+      // The Electron renderer navigates between modules with location.hash.
+      // Do not let a WebView/Chromium popstate caused by that navigation open
+      // the dashboard exit confirmation.
+      if (isElectronRuntime) return;
       if (allowNextPopRef.current) {
         allowNextPopRef.current = false;
         return;
@@ -167,9 +174,10 @@ export function NavigationGuardProvider({ children }: { children: React.ReactNod
       }
     };
 
+    if (isElectronRuntime) return;
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [requestAction, restoreCurrentUrl]);
+  }, [isElectronRuntime, requestAction, restoreCurrentUrl]);
 
   useEffect(() => {
     let removeNativeListener: (() => void) | undefined;
@@ -189,13 +197,18 @@ export function NavigationGuardProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      // The Electron main process owns the real window-close lifecycle and
+      // sends close-requested to the renderer. A browser beforeunload guard
+      // must not participate in Electron's internal route changes.
+      if (isElectronRuntime) return;
       if (allowUnloadRef.current || !guardRef.current?.isDirty) return;
       event.preventDefault();
       event.returnValue = '';
     };
+    if (isElectronRuntime) return;
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, []);
+  }, [isElectronRuntime]);
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
