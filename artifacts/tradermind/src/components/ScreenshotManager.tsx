@@ -39,6 +39,7 @@ import VisualFeatureEditor from './VisualFeatureEditor';
 import VisualComparisonView from './VisualComparisonView';
 import VisualSimilarityPanel from './VisualSimilarityPanel';
 import MTFSequenceView from './MTFSequenceView';
+import StoredImage from './StoredImage';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -356,7 +357,7 @@ export default function ScreenshotManager({
                     ) : (
                       group.map(ss => (
                         <div key={ss.id} className="aspect-video rounded overflow-hidden">
-                          <img src={ss.dataUrl} alt={ss.label} className="w-full h-full object-cover" />
+                          <StoredImage source={ss.dataUrl} alt={ss.label} className="w-full h-full object-cover" />
                         </div>
                       ))
                     )}
@@ -405,8 +406,8 @@ export default function ScreenshotManager({
           >
             {/* Thumbnail */}
             <div className="aspect-video relative overflow-hidden bg-black/20">
-              <img
-                src={ss.dataUrl}
+              <StoredImage
+                source={ss.dataUrl}
                 alt={ss.label}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
               />
@@ -575,9 +576,12 @@ export default function ScreenshotManager({
             {activeView.tab === 'view' && (
               <div className="space-y-3">
                 <div className="rounded-lg overflow-hidden border border-white/10">
-                  <img
-                    src={activeSS.dataUrl}
+                  <StoredImage
+                    source={activeSS.dataUrl}
                     alt={activeSS.label}
+                    enableViewer
+                    showDownload
+                    filename={activeSS.label || 'trade-screenshot'}
                     className="w-full h-auto max-h-[60vh] object-contain bg-black/20"
                   />
                 </div>

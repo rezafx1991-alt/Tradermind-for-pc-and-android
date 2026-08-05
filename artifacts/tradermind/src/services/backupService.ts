@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { db, Trade, Strategy, Phase, Step, Rule, AnalysisSession, DailyJournal } from '../db/database';
+import { db, Trade, Strategy, Phase, Step, Rule, AnalysisSession, DailyJournal, dataUrlToBlob } from '../db/database';
 import { securityService } from '../security/securityService';
 import { APP_VERSION, DB_VERSION, BACKUP_FORMAT_VERSION, SCHEMA_VERSION } from '../constants/version';
 
@@ -99,6 +99,50 @@ export interface BackupHistoryItem {
 // ─────────────────────────────────────────────
 // ساخت payload داده
 // ─────────────────────────────────────────────
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('خواندن تصویر برای پشتیبان‌گیری انجام نشد'));
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function serializeChartScreenshots(records: unknown[]): Promise<unknown[]> {
+  return Promise.all(records.map(async (record: any) => {
+    if (!record || typeof record !== 'object') return record;
+    const imageBlob = record.imageBlob;
+    if (imageBlob instanceof Blob) {
+      try {
+        return {
+          ...record,
+          dataUrl: await blobToDataUrl(imageBlob),
+          imageBlob: null,
+        };
+      } catch {
+        return { ...record, imageBlob: null };
+      }
+    }
+    // JSON serialization of a Blob from an older exporter produces {}.
+    return { ...record, imageBlob: null };
+  }));
+}
+
+function restoreChartScreenshots(records: unknown[] | undefined): unknown[] {
+  return (records ?? []).map((record: any) => {
+    if (!record || typeof record !== 'object') return record;
+    if (record.imageBlob instanceof Blob) return record;
+    if (typeof record.dataUrl === 'string' && record.dataUrl.startsWith('data:')) {
+      try {
+        return { ...record, imageBlob: dataUrlToBlob(record.dataUrl), dataUrl: '' };
+      } catch {
+        return record;
+      }
+    }
+    return record;
+  });
+}
+
 async function buildBackupData() {
   const [
     strategies, phases, steps, rules, analysisSessions, trades, dailyJournals,
@@ -143,6 +187,7 @@ async function buildBackupData() {
       db.accounts.toArray(),
       db.tradingBoxes.toArray(),
     ]);
+  const serializedChartScreenshots = await serializeChartScreenshots(chartScreenshots);
 
   const settings = backupService.exportSettings();
   const allRecords = [
@@ -151,7 +196,7 @@ async function buildBackupData() {
     knowledgeNotes, knowledgeCategories, replayDatasets, replaySessions,
     replayDecisions, replayPlaylists, marketContextSessions, tradeEvents,
     tradeVersions, riskProfiles, riskViolations, riskGroups, performanceReviews,
-    preTradeChecklists, dailyFocus, chartScreenshots, screenshotGroups,
+    preTradeChecklists, dailyFocus, serializedChartScreenshots, screenshotGroups,
     visualPatterns, screenshotCollections, accounts, tradingBoxes,
   ];
   const totalRecords = allRecords.reduce((sum, records) => sum + records.length, 0);
@@ -162,7 +207,7 @@ async function buildBackupData() {
     knowledgeNotes, knowledgeCategories, replayDatasets, replaySessions,
     replayDecisions, replayPlaylists, marketContextSessions, tradeEvents,
     tradeVersions, riskProfiles, riskViolations, riskGroups, performanceReviews,
-    preTradeChecklists, dailyFocus, chartScreenshots, screenshotGroups,
+    preTradeChecklists, dailyFocus, chartScreenshots: serializedChartScreenshots, screenshotGroups,
     visualPatterns, screenshotCollections, accounts, tradingBoxes,
   };
 
@@ -730,6 +775,7 @@ export const backupService = {
    * اگر هر مرحله‌ای fail شود، Dexie کل عملیات را rollback می‌کند و DB سالم می‌ماند.
    */
   async importReplace(data: BackupData['data']): Promise<void> {
+    const restoredChartScreenshots = restoreChartScreenshots(data.chartScreenshots);
     // همه جداول موجود در backup را در یک transaction restore می‌کنیم
     const tables = [
       db.strategies, db.phases, db.steps, db.rules,
@@ -767,7 +813,7 @@ export const backupService = {
       if (data.marketContextSessions?.length) await db.marketContextSessions.bulkAdd(data.marketContextSessions as any[]);
       if (data.tradeEvents?.length)       await db.tradeEvents.bulkAdd(data.tradeEvents as any[]);
       if (data.tradeVersions?.length)     await db.tradeVersions.bulkAdd(data.tradeVersions as any[]);
-      if (data.chartScreenshots?.length)  await db.chartScreenshots.bulkAdd(data.chartScreenshots as any[]);
+       if (restoredChartScreenshots.length) await db.chartScreenshots.bulkAdd(restoredChartScreenshots as any[]);
       if (data.riskProfiles?.length)     await db.riskProfiles.bulkAdd(data.riskProfiles as any[]);
       if (data.riskViolations?.length)    await db.riskViolations.bulkAdd(data.riskViolations as any[]);
       if (data.riskGroups?.length)        await db.riskGroups.bulkAdd(data.riskGroups as any[]);
@@ -791,6 +837,7 @@ export const backupService = {
   // ────────── ادغام (Keep Newest) ──────────
   async importMerge(data: BackupData['data']): Promise<MergeStats> {
     const stats: MergeStats = { added: 0, updated: 0, skipped: 0 };
+    const restoredChartScreenshots = restoreChartScreenshots(data.chartScreenshots);
 
     const mergeTable = async (table: any, items: any[]) => {
       for (const item of items) {
@@ -827,7 +874,7 @@ export const backupService = {
       [db.replayDatasets, data.replayDatasets], [db.replaySessions, data.replaySessions],
       [db.replayDecisions, data.replayDecisions], [db.replayPlaylists, data.replayPlaylists],
       [db.marketContextSessions, data.marketContextSessions], [db.tradeEvents, data.tradeEvents],
-      [db.tradeVersions, data.tradeVersions], [db.chartScreenshots, data.chartScreenshots],
+      [db.tradeVersions, data.tradeVersions], [db.chartScreenshots, restoredChartScreenshots],
       [db.riskProfiles, data.riskProfiles], [db.riskViolations, data.riskViolations],
       [db.riskGroups, data.riskGroups], [db.performanceReviews, data.performanceReviews],
       [db.preTradeChecklists, data.preTradeChecklists], [db.dailyFocus, data.dailyFocus],

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { openImagePicker, fileToCompressedDataUrl } from "../lib/imageCompression";
 import { extractInitialFeatures, findSimilarScreenshots } from "../services/visualAnalysisService";
 import VisualSimilarityPanel from "../components/VisualSimilarityPanel";
+import StoredImage from "../components/StoredImage";
 import { TradeScreenshot } from "../types/screenshot";
 
 type ViewMode = 'runner' | 'phaseSummary' | 'finalDecision' | 'finished';
@@ -678,9 +679,12 @@ export default function SessionRunner() {
                         {res ? (
                           <>
                             <div className="relative inline-block">
-                              <img
-                                src={res}
+                              <StoredImage
+                                source={res as string}
                                 alt="اسکرین‌شات"
+                                enableViewer
+                                showDownload
+                                filename={step.name || 'session-screenshot'}
                                 className="max-h-48 rounded-lg border object-contain"
                               />
                               <Button

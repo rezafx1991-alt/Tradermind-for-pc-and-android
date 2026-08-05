@@ -36,6 +36,7 @@ import {
 } from '../types/chartScreenshot';
 import { VisualFeature, ScreenshotAnnotation, FEATURE_CATEGORIES, FEATURE_LABELS } from '../types/screenshot';
 import AnnotationCanvas from '../components/AnnotationCanvas';
+import StoredImage, { useStoredImageUrl } from '../components/StoredImage';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -342,7 +343,7 @@ function ScreenshotCard({ ss, isSelected, onSelect, onDelete, collections }: {
       onClick={onSelect}
     >
       <div className="aspect-video relative overflow-hidden bg-black/20">
-        <img src={ss.dataUrl} alt={ss.label ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+        <StoredImage source={ss} alt={ss.label ?? ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
         {qScore !== null && (
           <span className={cn('absolute top-1.5 right-1.5 text-[10px] px-1 py-0.5 rounded bg-black/70 font-mono',
             qScore >= 70 ? 'text-green-400' : qScore >= 40 ? 'text-amber-400' : 'text-red-400')}>
@@ -412,6 +413,7 @@ function ScreenshotDetailPanel({ ss, allTrades, allScreenshots, onClose, onUpdat
   const [annotations, setAnnotations] = useState<ScreenshotAnnotation[]>(safeJson<ScreenshotAnnotation[]>(ss.annotations, []));
   const [similarMatches, setSimilarMatches] = useState<any[]>([]);
   const qc = useQueryClient();
+  const annotationImageUrl = useStoredImageUrl(ss);
 
   useEffect(() => {
     if (tab === 'similar') {
@@ -485,7 +487,14 @@ function ScreenshotDetailPanel({ ss, allTrades, allScreenshots, onClose, onUpdat
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* تصویر */}
         <div className="rounded-lg overflow-hidden border border-white/10">
-          <img src={ss.dataUrl} alt={ss.label ?? ''} className="w-full h-auto max-h-72 object-contain bg-black/30" />
+          <StoredImage
+            source={ss}
+            alt={ss.label ?? ''}
+            enableViewer
+            showDownload
+            filename={ss.label || 'chart-screenshot'}
+            className="w-full h-auto max-h-72 object-contain bg-black/30"
+          />
         </div>
 
         {/* پنل تب‌دار */}
@@ -633,7 +642,7 @@ function ScreenshotDetailPanel({ ss, allTrades, allScreenshots, onClose, onUpdat
               <p className="text-xs text-muted-foreground">تصویر اصلی دست‌نخورده می‌ماند — حاشیه‌نویسی‌ها جداگانه ذخیره می‌شوند</p>
               <div className="rounded-lg overflow-hidden border border-white/10">
                 <AnnotationCanvas
-                  imageDataUrl={ss.dataUrl}
+                  imageDataUrl={annotationImageUrl ?? ''}
                   annotations={annotations}
                   onChange={setAnnotations}
                 />
@@ -658,7 +667,7 @@ function ScreenshotDetailPanel({ ss, allTrades, allScreenshots, onClose, onUpdat
                     {similarMatches.map(m => (
                       <div key={m.screenshotId} className="rounded-lg border border-white/10 overflow-hidden">
                         <div className="aspect-video relative overflow-hidden">
-                          <img src={m.dataUrl} alt="" className="w-full h-full object-cover" />
+                          <StoredImage source={m} alt="" className="w-full h-full object-cover" />
                           <span className="absolute top-1 right-1 text-[10px] px-1 py-0.5 rounded bg-black/70 text-white">{m.matchScore}٪</span>
                         </div>
                         <div className="p-1.5 text-xs">
@@ -791,7 +800,7 @@ function GroupsTab() {
                       {ssInGroup.map(ss => (
                         <div key={ss.id} className="relative group rounded-lg overflow-hidden border border-white/10">
                           <div className="aspect-video">
-                            <img src={ss.dataUrl} alt={ss.label ?? ''} className="w-full h-full object-cover" />
+                            <StoredImage source={ss} alt={ss.label ?? ''} className="w-full h-full object-cover" />
                           </div>
                           <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1.5 py-1">
                             <p className="text-[9px] text-white truncate">{ss.timeframe ?? ss.label ?? '—'}</p>
@@ -1003,7 +1012,7 @@ function PatternsTab({ allTrades }: { allTrades: Trade[] }) {
                     <div className="grid grid-cols-3 gap-1.5">
                       {ssInPattern.slice(0, 6).map(ss => (
                         <div key={ss.id} className="aspect-video rounded overflow-hidden border border-white/10">
-                          <img src={ss.dataUrl} alt="" className="w-full h-full object-cover" />
+                          <StoredImage source={ss} alt="" className="w-full h-full object-cover" />
                         </div>
                       ))}
                     </div>
@@ -1128,7 +1137,7 @@ function CollectionsTab() {
                   <div className="grid grid-cols-2 gap-1">
                     {preview.map(ss => (
                       <div key={ss.id} className="aspect-video rounded overflow-hidden bg-black/20">
-                        <img src={ss.dataUrl} alt="" className="w-full h-full object-cover" />
+                        <StoredImage source={ss} alt="" className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
@@ -1170,7 +1179,7 @@ function CollectionsTab() {
                 {colScreenshots.map(ss => (
                   <div key={ss.id} className="relative group rounded-lg overflow-hidden border border-white/10">
                     <div className="aspect-video">
-                      <img src={ss.dataUrl} alt={ss.label ?? ''} className="w-full h-full object-cover" />
+                      <StoredImage source={ss} alt={ss.label ?? ''} className="w-full h-full object-cover" />
                     </div>
                     <div className="p-1.5 text-xs">
                       <p className="truncate">{ss.label ?? 'اسکرین‌شات'}</p>
@@ -1528,7 +1537,7 @@ function BriefingTab({ allTrades }: { allTrades: Trade[] }) {
                   {briefing.similarScreenshots.map((m: any) => (
                     <div key={m.screenshotId} className="rounded-lg border border-white/10 overflow-hidden">
                       <div className="aspect-video relative">
-                        <img src={m.dataUrl} alt="" className="w-full h-full object-cover" />
+                        <StoredImage source={m} alt="" className="w-full h-full object-cover" />
                         <span className="absolute top-1 right-1 text-[10px] px-1 py-0.5 rounded bg-black/70 text-white">{m.matchScore}٪</span>
                       </div>
                       <div className="p-1.5 text-xs">

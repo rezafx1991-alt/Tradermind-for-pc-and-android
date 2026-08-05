@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useToast } from '../hooks/use-toast';
+import StoredImage from '../components/StoredImage';
 import {
   Play, Pause, SkipForward, Eye, EyeOff, ChevronRight, ChevronLeft,
   Plus, Upload, Trash2, BarChart3, TrendingUp, TrendingDown,
@@ -146,9 +147,12 @@ function ScreenshotViewer({ item, step, total }: { item: ReplayScreenshotItem; s
         <span>{step + 1} / {total}</span>
       </div>
       <div className="rounded-lg overflow-hidden border border-border/40 bg-black/20">
-        <img
-          src={item.dataUrl}
+        <StoredImage
+          source={item.dataUrl}
           alt={item.label || `Step ${step + 1}`}
+          enableViewer
+          showDownload
+          filename={item.label || `replay-step-${step + 1}`}
           className="w-full object-contain max-h-72"
         />
       </div>
@@ -1004,7 +1008,14 @@ function DatasetImportDialog({ open, onClose, onImported }: {
                 <div className="mt-2 space-y-1">
                   {screenshots.map((s, i) => (
                     <div key={i} className="flex items-center gap-2">
-                      <img src={s.dataUrl} className="h-8 w-12 object-cover rounded" alt="" />
+                      <StoredImage
+                        source={s.dataUrl}
+                        className="h-8 w-12 object-cover rounded"
+                        alt=""
+                        enableViewer
+                        showDownload
+                        filename={s.label || 'replay-screenshot'}
+                      />
                       <Input
                         value={s.label}
                         onChange={e => setScreenshots(prev => prev.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
