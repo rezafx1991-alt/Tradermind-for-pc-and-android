@@ -7,4 +7,4 @@ Android Back must navigate within the app whenever a prior route exists, use a p
 
 **Why:** Browser history, Electron file-hash routing, and Capacitor Back events do not share identical navigation semantics; a single shared guard prevents platform-specific handlers from disagreeing.
 
-**How to apply:** Register editable pages with the shared guard and keep native lifecycle handlers in the app shell. When adding a new deep-link page, add its parent fallback if direct-entry Back must return to a list page.
+**How to apply:** Register editable pages with the shared guard and keep native lifecycle handlers in the app shell. When adding a new deep-link page, add its parent fallback if direct-entry Back must return to a list page. List filters that must survive detail/edit navigation belong in the route query and should be passed through a validated return path.

@@ -243,6 +243,7 @@ export default function NewTrade() {
   const searchParams = new URLSearchParams(_searchStr);
   const sessionId = searchParams.get('sessionId');
   const editId = searchParams.get('editId');
+  const returnTo = searchParams.get('returnTo');
   // idFromUrl فقط برای بازیابی پیش‌نویس پس از رفرش صفحه استفاده می‌شود
   // اگر new=true باشد یا editId وجود داشته باشد، از آن صرف‌نظر می‌شود
   const isNewTrade = searchParams.get('new') === 'true';
@@ -442,7 +443,7 @@ export default function NewTrade() {
   }, [trade?.profitLoss, trade?.status, trade?.result]);
 
   // باگ ۲: وقتی در حال ویرایش معامله هستیم، برگشت به صفحه جزئیات معامله می‌رود نه لیست
-  const backUrl = editId ? `/journal/trades/${editId}` : '/journal/trades';
+  const backUrl = returnTo || (editId ? `/journal/trades/${editId}` : '/journal/trades');
 
   const handleCancel = async () => {
     requestNavigation(backUrl);
@@ -540,7 +541,15 @@ export default function NewTrade() {
             </Button>
           </div>
           <Button className="order-1 flex-1 sm:order-none sm:flex-none" variant="outline" onClick={handleCancel}>Cancel</Button>
-          <Button className="order-2 flex-1 whitespace-nowrap sm:order-none sm:flex-none" onClick={async () => { if (trade) { await tradeService.updateTrade(trade.id, trade); } setLocation(`/journal/trades/${trade.id}`); }}>
+          <Button className="order-2 flex-1 whitespace-nowrap sm:order-none sm:flex-none" onClick={async () => {
+            if (trade) {
+              await tradeService.updateTrade(trade.id, trade);
+              const detailPath = returnTo
+                ? `/journal/trades/${trade.id}?returnTo=${encodeURIComponent(returnTo)}`
+                : `/journal/trades/${trade.id}`;
+              setLocation(detailPath);
+            }
+          }}>
             <Eye className="w-4 h-4 mr-2" /> Save & View
           </Button>
         </div>
