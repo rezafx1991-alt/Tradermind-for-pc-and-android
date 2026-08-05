@@ -28,7 +28,8 @@
   "nsis": {
     "oneClick": false,
     "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
+    "allowToChangeInstallationDirectory": false,
+    "runAfterFinish": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "TraderMind OS"
