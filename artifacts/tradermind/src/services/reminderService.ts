@@ -50,9 +50,30 @@ async function ensureNativePermission(): Promise<boolean> {
 
 async function showBrowserNotification(reminder: Reminder): Promise<void> {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') await Notification.requestPermission();
-  if (Notification.permission === 'granted') {
-    new Notification(reminder.title, { body: reminder.body || 'یادآور TraderMind' });
+  try {
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+    if (Notification.permission !== 'granted') return;
+
+    // بعضی نسخه‌های Chrome روی Android و محیط‌های embedded سازنده‌ی
+    // Notification را ندارند و `new Notification()` خطای Illegal constructor
+    // می‌دهد. Service Worker روش استاندارد و سازگار برای اعلان وب موبایل است.
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      if (typeof registration.showNotification === 'function') {
+        await registration.showNotification(reminder.title, {
+          body: reminder.body || 'یادآور TraderMind',
+          tag: `tradermind-reminder-${reminder.id}`,
+          dir: 'rtl',
+          lang: 'fa',
+        });
+      }
+      return;
+    }
+  } catch (error) {
+    // شکست اعلان نباید رابط کاربری یا زمان‌بندی‌های دیگر را از کار بیندازد.
+    console.warn('[TraderMind reminders] Browser notification unavailable', error);
   }
 }
 
