@@ -3,3 +3,4 @@
 - [RTL name display](rtl-name-display.md) — Persian account and broker names must not use one-line truncation; RTL ellipsis can hide the final characters.
 - [Navigation and exit guards](navigation-guards.md) — Android Back is route-aware; dashboard Back exits only after confirmation, while dirty forms offer save, discard, or cancel.
 - [Imported trade normalization](import-normalization.md) — distinguish blank numeric values from zero and use idempotent session/status inference for imported trades.
+- [Tagged releases](tagged-releases.md) — run release workflows from a pushed v* tag; manual dispatch on main creates a separate main-tagged release.

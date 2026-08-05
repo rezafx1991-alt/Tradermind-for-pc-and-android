@@ -1,0 +1,23 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "GsLLi_MRjVjo4qP00-8Cz"
+uri = "file://artifacts/tradermind-video/exports/tradermind-intro.mp4"
+type = "video"
+title = "TraderMind Intro Video MP4"
+description = "Final 24.3-second TraderMind introduction video in H.264 1280×720 format."
+
+[[outputs]]
+id = "8hUdi5DlkckaMJ3MZgNkh"
+uri = "file://artifacts/tradermind-video/exports/tradermind-intro.webm"
+type = "video"
+title = "TraderMind Intro Video WebM"
+description = "Final 24.3-second TraderMind introduction video in VP9 1280×720 format."
+
+[[outputs]]
+id = "72pS6tC2zrc3cj78P1Mq-"
+uri = "file://artifacts/tradermind-video/exports/TraderMind-intro-1.2.9.mp4"
+type = "video"
+title = "TraderMind Intro Video v1.2.9"
+description = "Final 13.97-second TraderMind introduction video, H.264 MP4 at 1920×1080 and 30fps."
