@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ComponentProps } from "react";
 import { Link, useLocation } from "wouter";
 import { tradeService } from "../services/tradeService";
 import { analysisService } from "../services/analysisService";
@@ -113,13 +113,11 @@ function getCustomSymbols(): { label: string; value: string; market: string }[] 
   }
 }
 
-// لیست حجم پوزیشن (لات) از ۰.۰۱ شروع می‌شود
+// لیست حجم پوزیشن (لات) با گام ۰.۰۱ تا یک لات، سپس مقادیر بزرگ‌تر
 const POSITION_SIZE_OPTIONS = [
-  0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
-  0.10, 0.12, 0.15, 0.18, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45,
-  0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.25, 1.50, 1.75, 2.00,
-  2.50, 3.00, 4.00, 5.00, 7.50, 10.00, 15.00, 20.00, 25.00,
-  30.00, 50.00, 100.00,
+  ...Array.from({ length: 100 }, (_, index) => Number(((index + 1) / 100).toFixed(2))),
+  1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00, 5.00, 7.50, 10.00,
+  15.00, 20.00, 25.00, 30.00, 50.00, 100.00,
 ];
 
 // لیست درصد ریسک
@@ -127,6 +125,68 @@ const RISK_PERCENTAGE_OPTIONS = [
   0.25, 0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 2.00,
   2.50, 3.00, 4.00, 5.00, 7.50, 10.00,
 ];
+
+function normalizeDecimalInput(value: string): string {
+  const normalized = value
+    .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[٫,]/g, '.')
+    .replace(/[^\d.-]/g, '');
+  const sign = normalized.startsWith('-') ? '-' : '';
+  const unsigned = normalized.replace(/-/g, '');
+  const [whole = '', ...fraction] = unsigned.split('.');
+  return `${sign}${whole}${fraction.length > 0 ? `.${fraction.join('')}` : ''}`;
+}
+
+function customDecimalValue(value: string): number | null {
+  if (!value || value === '.') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function decimalValue(value: string): number | null {
+  if (!value || value === '.' || value === '-') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function NumericInput({
+  value,
+  onValueChange,
+  ...props
+}: Omit<ComponentProps<typeof Input>, 'value' | 'onChange'> & {
+  value: number | null | undefined;
+  onValueChange: (value: number | null) => void;
+}) {
+  const [text, setText] = useState(value == null ? '' : String(value));
+  const lastSyncedValue = useRef<number | null>(value ?? null);
+
+  useEffect(() => {
+    const externalValue = value ?? null;
+    if (externalValue !== lastSyncedValue.current) {
+      setText(externalValue == null ? '' : String(externalValue));
+      lastSyncedValue.current = externalValue;
+    }
+  }, [value]);
+
+  return (
+    <Input
+      {...props}
+      type="text"
+      inputMode="decimal"
+      step="any"
+      value={text}
+      onChange={event => {
+        const nextText = normalizeDecimalInput(event.target.value);
+        const nextValue = decimalValue(nextText);
+        setText(nextText);
+        lastSyncedValue.current = nextValue;
+        onValueChange(nextValue);
+      }}
+      dir="ltr"
+    />
+  );
+}
 
 // حالت‌های احساسی به فارسی
 const EMOTIONS = [
@@ -261,6 +321,9 @@ export default function NewTrade() {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
+  // ورودی متن جداست تا مقدارهای میانی مثل «۰.» هنگام تایپ با رندر مجدد پاک نشوند.
+  const [positionSizeInput, setPositionSizeInput] = useState('');
+  const [riskPercentageInput, setRiskPercentageInput] = useState('');
 
   useEffect(() => {
     db.trades.toArray().then(setAllTrades);
@@ -364,6 +427,16 @@ export default function NewTrade() {
       }
 
       setTrade(currentTrade);
+      setPositionSizeInput(
+        currentTrade.positionSize != null && !POSITION_SIZE_OPTIONS.includes(currentTrade.positionSize)
+          ? String(currentTrade.positionSize)
+          : ''
+      );
+      setRiskPercentageInput(
+        currentTrade.riskPercentage != null && !RISK_PERCENTAGE_OPTIONS.includes(currentTrade.riskPercentage)
+          ? String(currentTrade.riskPercentage)
+          : ''
+      );
       lastSavedRef.current = currentTrade;
 
       const targetSessionId = currentTrade.sessionId || sessionId;
@@ -758,15 +831,15 @@ export default function NewTrade() {
             </div>
             <div className="space-y-2">
               <Label>Entry Price</Label>
-              <Input type="text" inputMode="decimal" step="any" value={trade.entryPrice || ''} onChange={e => handleChange('entryPrice', parseFloat(e.target.value) || 0)} />
+              <NumericInput value={trade.entryPrice} onValueChange={value => handleChange('entryPrice', value ?? 0)} />
             </div>
             <div className="space-y-2">
               <Label>Stop Loss</Label>
-              <Input type="text" inputMode="decimal" step="any" value={trade.stopLoss || ''} onChange={e => handleChange('stopLoss', parseFloat(e.target.value) || 0)} />
+              <NumericInput value={trade.stopLoss} onValueChange={value => handleChange('stopLoss', value ?? 0)} />
             </div>
             <div className="space-y-2">
               <Label>Take Profit</Label>
-              <Input type="text" inputMode="decimal" step="any" value={trade.takeProfit || ''} onChange={e => handleChange('takeProfit', parseFloat(e.target.value) || null)} />
+              <NumericInput value={trade.takeProfit} onValueChange={value => handleChange('takeProfit', value)} />
             </div>
           </div>
         </section>
@@ -785,10 +858,9 @@ export default function NewTrade() {
             ].map(f => (
               <div key={f.key} className="space-y-2">
                 <Label>{f.label}</Label>
-                <Input
-                  type="text" inputMode="decimal"
-                  value={(trade as any)[f.key] || ''}
-                  onChange={e => handleChange(f.key as any, parseFloat(e.target.value) || null)}
+                <NumericInput
+                  value={(trade as any)[f.key]}
+                  onValueChange={value => handleChange(f.key as any, value)}
                   placeholder="—"
                 />
               </div>
@@ -805,7 +877,10 @@ export default function NewTrade() {
               <Label>حجم پوزیشن (لات)</Label>
               <Select
                 value={trade.positionSize != null ? String(trade.positionSize) : ''}
-                onValueChange={v => handleChange('positionSize', v ? parseFloat(v) : null)}
+                onValueChange={v => {
+                  setPositionSizeInput('');
+                  handleChange('positionSize', v ? parseFloat(v) : null);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="انتخاب حجم…" />
@@ -821,13 +896,14 @@ export default function NewTrade() {
               {/* ورودی دستی برای مقادیر سفارشی */}
               <Input
                 type="text" inputMode="decimal" placeholder="یا مقدار دلخواه وارد کنید…"
-                value={trade.positionSize != null && !POSITION_SIZE_OPTIONS.includes(trade.positionSize) ? String(trade.positionSize) : ''}
+                value={positionSizeInput}
                 onChange={e => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v > 0) handleChange('positionSize', v);
-                  else if (e.target.value === '') handleChange('positionSize', null);
+                  const value = normalizeDecimalInput(e.target.value);
+                  setPositionSizeInput(value);
+                  handleChange('positionSize', customDecimalValue(value));
                 }}
                 className="h-8 text-sm mt-1"
+                dir="ltr"
               />
             </div>
 
@@ -836,7 +912,10 @@ export default function NewTrade() {
               <Label>ریسک (٪)</Label>
               <Select
                 value={trade.riskPercentage != null ? String(trade.riskPercentage) : ''}
-                onValueChange={v => handleChange('riskPercentage', v ? parseFloat(v) : null)}
+                onValueChange={v => {
+                  setRiskPercentageInput('');
+                  handleChange('riskPercentage', v ? parseFloat(v) : null);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="انتخاب ریسک…" />
@@ -851,19 +930,20 @@ export default function NewTrade() {
               </Select>
               <Input
                 type="text" inputMode="decimal" placeholder="یا مقدار دلخواه…"
-                value={trade.riskPercentage != null && !RISK_PERCENTAGE_OPTIONS.includes(trade.riskPercentage) ? String(trade.riskPercentage) : ''}
+                value={riskPercentageInput}
                 onChange={e => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v > 0) handleChange('riskPercentage', v);
-                  else if (e.target.value === '') handleChange('riskPercentage', null);
+                  const value = normalizeDecimalInput(e.target.value);
+                  setRiskPercentageInput(value);
+                  handleChange('riskPercentage', customDecimalValue(value));
                 }}
                 className="h-8 text-sm mt-1"
+                dir="ltr"
               />
             </div>
 
             <div className="space-y-2">
               <Label>مقدار ریسک ($)</Label>
-              <Input type="text" inputMode="decimal" step="any" value={trade.riskAmount || ''} onChange={e => handleChange('riskAmount', parseFloat(e.target.value) || null)} />
+              <NumericInput value={trade.riskAmount} onValueChange={value => handleChange('riskAmount', value)} />
             </div>
           </div>
         </section>
@@ -922,31 +1002,22 @@ export default function NewTrade() {
               </div>
               <div className="space-y-2">
                 <Label>Exit Price</Label>
-                <Input type="text" inputMode="decimal" step="any" value={trade.exitPrice || ''} onChange={e => handleChange('exitPrice', parseFloat(e.target.value) || null)} />
+                <NumericInput value={trade.exitPrice} onValueChange={value => handleChange('exitPrice', value)} />
               </div>
               <div className="space-y-2">
                 <Label>P&L</Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  step="any"
-                  value={trade.profitLoss ?? ''}
-                  onChange={e => {
-                    const value = e.target.value.trim();
-                    handleChange('profitLoss', value === '' ? null : (parseFloat(value) || 0));
-                  }}
-                />
+                <NumericInput value={trade.profitLoss} onValueChange={value => handleChange('profitLoss', value)} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label>R Multiple</Label>
                   {computedR && <span className="text-xs text-muted-foreground">Auto: {computedR}R</span>}
                 </div>
-                <Input type="text" inputMode="decimal" step="any" value={trade.rMultiple || ''} onChange={e => handleChange('rMultiple', parseFloat(e.target.value) || null)} />
+                <NumericInput value={trade.rMultiple} onValueChange={value => handleChange('rMultiple', value)} />
               </div>
               <div className="space-y-2">
                 <Label>Fees</Label>
-                <Input type="text" inputMode="decimal" step="any" value={trade.fees || ''} onChange={e => handleChange('fees', parseFloat(e.target.value) || null)} />
+                <NumericInput value={trade.fees} onValueChange={value => handleChange('fees', value)} />
               </div>
               <div className="space-y-2 lg:col-span-3">
                 <Label>Reason for Exit</Label>
