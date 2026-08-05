@@ -28,6 +28,7 @@ import {
   HeartPulse,
   CreditCard,
   Box,
+  Bell,
 } from "lucide-react";
 
 import { cn } from "../lib/utils";
@@ -176,16 +177,6 @@ export function Sidebar() {
           icon: Lightbulb,
           label: "نکات معاملاتی",
         },
-        {
-          href: "/accounts",
-          icon: CreditCard,
-          label: "حساب‌های معاملاتی",
-        },
-        {
-          href: "/trading-boxes",
-          icon: Box,
-          label: "باکس‌های معاملاتی",
-        },
       ],
     },
 
@@ -304,8 +295,18 @@ export function Sidebar() {
 
 
     {
-      title: t.nav.system,
+      title: "مدیریت و پشتیبانی",
       items: [
+        {
+          href: "/accounts",
+          icon: CreditCard,
+          label: "حساب‌های معاملاتی",
+        },
+        {
+          href: "/trading-boxes",
+          icon: Box,
+          label: "باکس‌های معاملاتی",
+        },
         {
           href: "/backup",
           icon: HardDrive,
@@ -315,6 +316,11 @@ export function Sidebar() {
           href: "/settings",
           icon: Settings,
           label: t.nav.settings,
+        },
+        {
+          href: "/reminders",
+          icon: Bell,
+          label: "یادآورها",
         },
       ],
     },

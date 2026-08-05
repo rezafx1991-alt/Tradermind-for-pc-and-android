@@ -12,7 +12,6 @@ import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ArrowLeft, Save, Eye, Plus, X, Image as ImageIcon, Zap, BookOpen, ChevronDown, ChevronUp, CheckSquare, Square, CreditCard, Box } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "../components/ui/progress";
@@ -21,6 +20,7 @@ import PreTradeInsightPanel from "../components/PreTradeInsightPanel";
 import ScreenshotManager from "../components/ScreenshotManager";
 import { TradeScreenshot } from "../types/screenshot";
 import { getTradingDateTimeInput, parseTradingDateTimeInput } from "../lib/tradingTime";
+import { useNavigationGuard, useGuardedNavigation } from "../navigation/NavigationGuard";
 
 const MARKETS = ['Forex', 'Crypto', 'Indices', 'Stocks', 'Commodities', 'Other'];
 
@@ -259,7 +259,6 @@ export default function NewTrade() {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
-  const [leaveDialog, setLeaveDialog] = useState<{ show: boolean; resolve?: (leave: boolean) => void }>({ show: false });
 
   useEffect(() => {
     db.trades.toArray().then(setAllTrades);
@@ -294,6 +293,7 @@ export default function NewTrade() {
   const initialized = useRef(false);
   // Tracks the last set of URL params we initialized for — re-init when they change
   const lastInitKey = useRef<string>('__unset__');
+  const requestNavigation = useGuardedNavigation();
 
   useEffect(() => {
     // Build a key from the current URL params that identify which trade to open
@@ -388,6 +388,13 @@ export default function NewTrade() {
     setTimeout(() => setShowSavedIndicator(false), 2000);
   }, []);
 
+  useNavigationGuard({
+    isDirty: Boolean(trade && JSON.stringify(trade) !== JSON.stringify(lastSavedRef.current)),
+    onSave: async () => {
+      if (trade) await saveTrade(trade);
+    },
+  });
+
   useEffect(() => {
     if (!trade || !initialized.current) return;
     const timer = setTimeout(() => {
@@ -397,35 +404,6 @@ export default function NewTrade() {
     }, 800);
     return () => clearTimeout(timer);
   }, [trade, saveTrade]);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (trade && JSON.stringify(trade) !== JSON.stringify(lastSavedRef.current)) {
-        tradeService.updateTrade(trade.id, trade);
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [trade]);
-
-  // هشدار هنگام فشردن دکمه برگشت با داده‌های ذخیره‌نشده
-  useEffect(() => {
-    const onPopState = async () => {
-      if (!trade || JSON.stringify(trade) === JSON.stringify(lastSavedRef.current)) return;
-      const shouldLeave = await new Promise<boolean>(resolve => {
-        setLeaveDialog({ show: true, resolve });
-      });
-      if (!shouldLeave) {
-        window.history.pushState(null, '', window.location.href);
-      } else {
-        await tradeService.updateTrade(trade.id, trade);
-        // باگ ۲: هنگام ویرایش، به صفحه جزئیات معامله برگرد نه لیست
-        setLocation(editId ? `/journal/trades/${editId}` : '/journal/trades');
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [trade, setLocation, editId]);
 
   // اتودیتکت نتیجه بر اساس سود/زیان
   useEffect(() => {
@@ -440,21 +418,11 @@ export default function NewTrade() {
     }
   }, [trade?.profitLoss, trade?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleLeaveDialogConfirm = (leave: boolean) => {
-    setLeaveDialog(prev => {
-      prev.resolve?.(leave);
-      return { show: false };
-    });
-  };
-
   // باگ ۲: وقتی در حال ویرایش معامله هستیم، برگشت به صفحه جزئیات معامله می‌رود نه لیست
   const backUrl = editId ? `/journal/trades/${editId}` : '/journal/trades';
 
   const handleCancel = async () => {
-    if (trade && JSON.stringify(trade) !== JSON.stringify(lastSavedRef.current)) {
-      await tradeService.updateTrade(trade.id, trade);
-    }
-    setLocation(backUrl);
+    requestNavigation(backUrl);
   };
 
   const handleDateChange = (field: 'openedAt' | 'closedAt', dateString: string) => {
@@ -506,7 +474,7 @@ export default function NewTrade() {
     <div className="w-full min-w-0 max-w-4xl mx-auto space-y-6 pb-24 animate-in fade-in duration-500">
       <div className="flex flex-col gap-3 border-b pb-4 sticky top-0 bg-background/80 backdrop-blur z-10 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation(backUrl)}>
+          <Button variant="ghost" size="icon" onClick={() => requestNavigation(backUrl)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0">
@@ -1237,21 +1205,6 @@ export default function NewTrade() {
 
       </div>
 
-      {/* دیالوگ هشدار داده ذخیره‌نشده */}
-      <Dialog open={leaveDialog.show} onOpenChange={open => !open && handleLeaveDialogConfirm(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>تغییرات ذخیره نشده</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            تغییراتی که وارد کردید هنوز ذخیره نشده‌اند. آیا می‌خواهید ذخیره شوند و از این صفحه خارج شوید؟
-          </p>
-          <DialogFooter className="gap-2 flex-col sm:flex-row">
-            <Button variant="outline" onClick={() => handleLeaveDialogConfirm(false)}>بمانید</Button>
-            <Button variant="destructive" onClick={() => handleLeaveDialogConfirm(true)}>ذخیره و خروج</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

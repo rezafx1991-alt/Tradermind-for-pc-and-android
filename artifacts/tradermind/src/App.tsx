@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -23,14 +23,14 @@ function useElectronHashLocation(): [string, (to: string) => void] {
   const navigate = useCallback((to: string) => { window.location.hash = to; }, []);
   return [path, navigate];
 }
-import { toast } from 'sonner';
-
 import { ThemeProvider } from './components/ThemeProvider';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LockScreen } from './components/LockScreen';
 import { seedInitialData } from './services/seedService';
 import { useSecurityStore } from './security/useSecurityStore';
+import { NavigationGuardProvider } from './navigation/NavigationGuard';
+import { reminderService } from './services/reminderService';
 
 // ── Lazy-loaded pages (code splitting برای بارگذاری سریع‌تر)
 const Dashboard        = lazy(() => import('./pages/Dashboard'));
@@ -72,6 +72,7 @@ const TradeInsights          = lazy(() => import('./pages/TradeInsights'));
 const TradingPsychology      = lazy(() => import('./pages/TradingPsychology'));
 const Accounts               = lazy(() => import('./pages/Accounts'));
 const TradingBoxes           = lazy(() => import('./pages/TradingBoxes'));
+const Reminders              = lazy(() => import('./pages/Reminders'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -209,6 +210,7 @@ function Router() {
 
           <Route path="/accounts" component={Accounts} />
           <Route path="/trading-boxes" component={TradingBoxes} />
+          <Route path="/reminders" component={Reminders} />
 
           <Route path="/backup" component={BackupRestore} />
           <Route path="/settings" component={Settings} />
@@ -224,37 +226,6 @@ function Router() {
   );
 }
 
-// ── جلوگیری از خروج ناخواسته PWA با دکمه برگشت ──────────
-function BackButtonGuard() {
-  const exitPendingRef = useRef(false);
-
-  useEffect(() => {
-    // یک ورودی اضافه در تاریخچه ایجاد می‌کنیم تا همیشه یک «پشتوانه» وجود داشته باشد
-    const sentinelUrl = window.location.href;
-    window.history.replaceState({ __tmSentinel: true }, '', sentinelUrl);
-    window.history.pushState({ __tmEntry: true }, '', sentinelUrl);
-
-    const onPopState = (e: PopStateEvent) => {
-      if (e.state?.__tmSentinel) {
-        // به پایین ترین لایه تاریخچه رسیدیم — از خروج جلوگیری می‌کنیم
-        window.history.pushState({ __tmEntry: true }, '', window.location.href);
-
-        if (!exitPendingRef.current) {
-          exitPendingRef.current = true;
-          toast('برای خروج دوباره برگشت را بزنید', { duration: 2000 });
-          setTimeout(() => { exitPendingRef.current = false; }, 2000);
-        }
-      }
-      // در غیر این صورت wouter خودش مسیریابی را مدیریت می‌کند
-    };
-
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  return null;
-}
-
 // ── محتوای اصلی با بررسی قفل ─────────────────────────────
 function AppContent() {
   const { isEnabled, isLocked } = useSecurityStore();
@@ -265,11 +236,13 @@ function AppContent() {
       // از کار بیندازد.
       console.error('[TraderMind seed]', error);
     });
+    void reminderService.initialize().catch(error => {
+      console.error('[TraderMind reminders]', error);
+    });
   }, []);
 
   return (
     <>
-      <BackButtonGuard />
       <AutoLockManager />
       {/* اگر قفل فعال و بسته باشد، صفحه قفل نمایش داده می‌شود */}
       {isEnabled && isLocked && <LockScreen />}
@@ -289,7 +262,9 @@ function App() {
               hook={window.location.protocol === 'file:' ? useElectronHashLocation : undefined}
               base={window.location.protocol === 'file:' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')}
             >
-              <AppContent />
+              <NavigationGuardProvider>
+                <AppContent />
+              </NavigationGuardProvider>
             </WouterRouter>
             <Toaster />
             <SonnerToaster

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Switch as UISwitch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
+import { useNavigationGuard } from "../navigation/NavigationGuard";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
@@ -197,6 +198,7 @@ export default function StrategyBuilder() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [rules, setRules] = useState<Record<string, Rule[]>>({}); // stepId -> rules
   const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [metaDirty, setMetaDirty] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -209,6 +211,7 @@ export default function StrategyBuilder() {
     const s = await strategyService.getStrategyById(id!);
     if (!s) return;
     setStrategy(s);
+    setMetaDirty(false);
     const p = await strategyService.getPhasesByStrategyId(s.id);
     setPhases(p);
     if (p.length > 0 && !activePhaseId) setActivePhaseId(p[0].id);
@@ -247,6 +250,19 @@ export default function StrategyBuilder() {
     await strategyService.updatePhase(phaseId, data);
     setPhases(phases.map(p => p.id === phaseId ? { ...p, ...data } : p));
   };
+
+  useNavigationGuard({
+    isDirty: Boolean(strategy && metaDirty),
+    onSave: async () => {
+      if (!strategy) return;
+      await strategyService.updateStrategy(strategy.id, {
+        name: strategy.name,
+        description: strategy.description,
+      });
+      setMetaDirty(false);
+    },
+    onDiscard: () => setMetaDirty(false),
+  });
 
   const handleDeletePhase = async (phaseId: string) => {
     if (!confirm('Delete this phase and all its steps and rules?')) return;
@@ -372,15 +388,22 @@ export default function StrategyBuilder() {
             <div className="flex flex-col gap-1.5">
               <Input
                 value={strategy.name}
-                onChange={e => setStrategy({ ...strategy, name: e.target.value })}
-                onBlur={() => { strategyService.updateStrategy(strategy.id, { name: strategy.name, description: strategy.description }); setIsEditingMeta(false); }}
+                onChange={e => { setStrategy({ ...strategy, name: e.target.value }); setMetaDirty(true); }}
+                onBlur={() => {
+                  void strategyService.updateStrategy(strategy.id, { name: strategy.name, description: strategy.description });
+                  setMetaDirty(false);
+                  setIsEditingMeta(false);
+                }}
                 className="font-bold text-lg w-72"
                 autoFocus
               />
               <Input
                 value={strategy.description}
-                onChange={e => setStrategy({ ...strategy, description: e.target.value })}
-                onBlur={() => strategyService.updateStrategy(strategy.id, { description: strategy.description })}
+                onChange={e => { setStrategy({ ...strategy, description: e.target.value }); setMetaDirty(true); }}
+                onBlur={() => {
+                  void strategyService.updateStrategy(strategy.id, { description: strategy.description });
+                  setMetaDirty(false);
+                }}
                 className="text-sm w-72"
                 placeholder="Strategy description"
               />

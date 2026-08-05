@@ -1,3 +1,4 @@
 - [Release packaging](release-packaging.md) — Windows installer and Android APK are built on GitHub Actions; the Linux workspace validates web/Capacitor builds locally.
 - [GitHub credentials](github-credentials.md) — use the Replit GitHub connection; never request or store a personal token in chat or project files.
 - [RTL name display](rtl-name-display.md) — Persian account and broker names must not use one-line truncation; RTL ellipsis can hide the final characters.
+- [Navigation and exit guards](navigation-guards.md) — Android Back is route-aware; dashboard Back exits only after confirmation, while dirty forms offer save, discard, or cancel.
