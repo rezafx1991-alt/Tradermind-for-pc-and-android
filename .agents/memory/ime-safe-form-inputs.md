@@ -8,3 +8,9 @@ Controlled numeric inputs should keep a local text buffer and convert a normaliz
 **Why:** Persian/Arabic digits, localized decimal separators, composition events, and intermediate values such as `1.` can be replaced or erased when every keystroke is immediately parsed and rendered back as a number.
 
 **How to apply:** Use standard text inputs for editable numeric fields, normalize localized digits/separators at the boundary, preserve the raw normalized text locally, and let shared text inputs retain normal IME/voice-keyboard behavior.
+
+For Capacitor Android builds, keep `captureInput` disabled so the WebView uses Android's standard IME/InputConnection path.
+
+**Why:** Capacitor's alternate captured-input path is a simpler keyboard implementation and can prevent Android keyboard voice dictation from reaching controlled React text fields.
+
+**How to apply:** If Android voice typing stops working, verify the generated `android/app/src/main/assets/capacitor.config.json` contains `"captureInput": false` before changing application-level text fields.
