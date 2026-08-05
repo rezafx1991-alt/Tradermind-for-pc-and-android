@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { VideoTemplate } from './components/video/VideoTemplate';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster, toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -136,9 +137,18 @@ function AutoLockManager() {
       }
     };
 
-    // قفل فوری هنگام رفتن به Background
+    const isEditingText = () => {
+      const active = document.activeElement;
+      return active instanceof HTMLInputElement
+        || active instanceof HTMLTextAreaElement
+        || active instanceof HTMLElement && active.isContentEditable;
+    };
+
+    // On Android the keyboard's voice-typing UI can briefly change WebView
+    // visibility while the text field remains focused. Do not lock over an
+    // active editor in that transient browser event.
     const handleVisibilityChange = () => {
-      if (document.hidden && autoLockMinutes === 0) {
+      if (document.hidden && autoLockMinutes === 0 && !isEditingText()) {
         lock();
       }
     };
@@ -146,6 +156,17 @@ function AutoLockManager() {
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'] as const;
     events.forEach(e => document.addEventListener(e, resetTimer, { passive: true }));
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Capacitor's app-state event represents an actual native background
+    // transition and is therefore safer than using WebView visibility alone.
+    let disposed = false;
+    let removeAppStateListener: (() => void) | null = null;
+    CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive && autoLockMinutes === 0) lock();
+    }).then(handle => {
+      if (disposed) handle.remove();
+      else removeAppStateListener = () => { void handle.remove(); };
+    });
 
     // شروع تایمر
     if (autoLockMinutes > 0) {
@@ -156,6 +177,8 @@ function AutoLockManager() {
       if (timer) clearTimeout(timer);
       events.forEach(e => document.removeEventListener(e, resetTimer));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      disposed = true;
+      removeAppStateListener?.();
     };
   }, [isEnabled, autoLockMinutes, isLocked, lock, touchActivity]);
 

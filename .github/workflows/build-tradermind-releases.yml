@@ -73,6 +73,9 @@ jobs:
             pnpm exec cap add android
           fi
           pnpm exec cap sync android
+      - name: Apply Android keyboard compatibility patch
+        working-directory: artifacts/tradermind
+        run: python scripts/patch-android-native.py
       - name: Build installable APK
         working-directory: artifacts/tradermind/android
         run: ./gradlew assembleDebug

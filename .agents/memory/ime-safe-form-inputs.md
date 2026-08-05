@@ -14,3 +14,9 @@ For Capacitor Android builds, keep `captureInput` disabled so the WebView uses A
 **Why:** Capacitor's alternate captured-input path is a simpler keyboard implementation and can prevent Android keyboard voice dictation from reaching controlled React text fields.
 
 **How to apply:** If Android voice typing stops working, verify the generated `android/app/src/main/assets/capacitor.config.json` contains `"captureInput": false` before changing application-level text fields.
+
+Android WebView forms should also use resize-aware soft-input behavior, and app-lock visibility handlers must not lock while an input or textarea remains focused. Voice-typing UI can briefly affect WebView visibility without leaving the actual app.
+
+**Why:** The keyboard dictation surface is a native overlay; treating its transient visibility change as an app background event can immediately dismiss the focused editor and cut off dictation.
+
+**How to apply:** Keep `captureInput` disabled, set the Android activity to `adjustResize`, and use Capacitor app-state events for real background transitions while ignoring transient visibility changes during active text editing.
