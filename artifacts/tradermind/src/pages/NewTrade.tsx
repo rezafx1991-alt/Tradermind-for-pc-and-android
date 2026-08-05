@@ -319,14 +319,25 @@ export default function NewTrade() {
 
       let currentTrade: Trade | null = null;
 
-      if (tradeIdRef.current) {
-        const existing = await tradeService.getTradeById(tradeIdRef.current);
+      const requestedTradeId = tradeIdRef.current;
+
+      if (requestedTradeId) {
+        const existing = await tradeService.getTradeById(requestedTradeId);
         if (existing) {
           currentTrade = existing;
         }
       } 
       
       if (!currentTrade) {
+        // Never replace a missing edit/recovery target with a new blank trade.
+        // That used to create an empty record when an editId was stale or the
+        // IndexedDB read raced with navigation.
+        if (requestedTradeId) {
+          toast.error('معاملهٔ موردنظر پیدا نشد و معاملهٔ جدیدی ساخته نشد.');
+          setLocation('/journal/trades');
+          return;
+        }
+
         currentTrade = await tradeService.createTrade({
           sessionId: sessionId || null
         });
