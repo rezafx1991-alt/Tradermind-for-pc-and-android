@@ -3,6 +3,7 @@ import { isWin, isClosed } from '../lib/tradeHelpers';
 import { strategyService } from './strategyService';
 import { analysisService } from './analysisService';
 import { tradeVersionService, tradeEventService } from './tradeEventService';
+import { detectTradingSession } from '../lib/tradeClassification';
 
 const defaultReview = JSON.stringify({ didWell: '', didWrong: '', learned: '', wouldTakeAgain: null, validSetup: null });
 const defaultPostTradeReviewStr = JSON.stringify(defaultPostTradeReview);
@@ -57,7 +58,7 @@ export const tradeService = {
       tags: '[]', liveMonitoring: null, createdAt: now,
       plannedEntry: null, plannedSL: null, plannedTP: null, plannedRR: null,
       plannedRisk: null, plannedPositionSize: null,
-      tradingSession: null, setupType: null, timezone: null,
+      setupType: null, timezone: null,
       entryReason: null, lesson: null,
       slMoved: null, tpMoved: null, partialClose: null, addedToPosition: null,
       reducedPosition: null, manualExit: null, managementReason: null,
@@ -67,6 +68,7 @@ export const tradeService = {
       id,
       accountId: data.accountId ?? defaults.accountId ?? null,
       boxId: data.boxId ?? defaults.boxId ?? null,
+      tradingSession: data.tradingSession ?? detectTradingSession(data.openedAt ?? now),
     };
 
     await db.transaction('rw', [db.trades, db.tradeEvents, db.tradeVersions], async () => {

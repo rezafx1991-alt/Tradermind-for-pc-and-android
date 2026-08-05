@@ -20,6 +20,7 @@ import PreTradeInsightPanel from "../components/PreTradeInsightPanel";
 import ScreenshotManager from "../components/ScreenshotManager";
 import { TradeScreenshot } from "../types/screenshot";
 import { getTradingDateTimeInput, parseTradingDateTimeInput } from "../lib/tradingTime";
+import { detectTradingSession } from "../lib/tradeClassification";
 import { useNavigationGuard, useGuardedNavigation } from "../navigation/NavigationGuard";
 
 const MARKETS = ['Forex', 'Crypto', 'Indices', 'Stocks', 'Commodities', 'Other'];
@@ -429,6 +430,17 @@ export default function NewTrade() {
     }
   }, [trade?.profitLoss, trade?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // اگر سود/زیان وارد شده باشد، معامله پایان‌یافته است؛ این برای معاملات
+  // قدیمی که دستی تکمیل می‌شوند هم همان رفتار ایمپورت را حفظ می‌کند.
+  useEffect(() => {
+    if (!trade || !initialized.current) return;
+    if (typeof trade.profitLoss !== 'number' || !Number.isFinite(trade.profitLoss)) return;
+    const result = trade.profitLoss > 0 ? 'win' : trade.profitLoss < 0 ? 'loss' : 'breakeven';
+    if (trade.status !== 'closed' || trade.result !== result) {
+      setTrade(prev => prev ? { ...prev, status: 'closed', result } : prev);
+    }
+  }, [trade?.profitLoss, trade?.status, trade?.result]);
+
   // باگ ۲: وقتی در حال ویرایش معامله هستیم، برگشت به صفحه جزئیات معامله می‌رود نه لیست
   const backUrl = editId ? `/journal/trades/${editId}` : '/journal/trades';
 
@@ -440,6 +452,15 @@ export default function NewTrade() {
     const timestamp = parseTradingDateTimeInput(dateString);
     if (Number.isNaN(timestamp)) return;
     handleChange(field, timestamp);
+
+    // اگر سشن قبلی خالی یا خودکار بوده، با تغییر ساعت بازشدن آن را دوباره
+    // محاسبه کن؛ سشن انتخاب‌شدهٔ دستی کاربر را بازنویسی نکن.
+    if (field === 'openedAt' && trade) {
+      const previousAutoSession = detectTradingSession(trade.openedAt);
+      if (!trade.tradingSession || trade.tradingSession === previousAutoSession) {
+        handleChange('tradingSession', detectTradingSession(timestamp));
+      }
+    }
   };
 
   const formatDateForInput = (timestamp: number | null) => {
@@ -896,7 +917,16 @@ export default function NewTrade() {
               </div>
               <div className="space-y-2">
                 <Label>P&L</Label>
-                <Input type="text" inputMode="decimal" step="any" value={trade.profitLoss || ''} onChange={e => handleChange('profitLoss', parseFloat(e.target.value) || null)} />
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  step="any"
+                  value={trade.profitLoss ?? ''}
+                  onChange={e => {
+                    const value = e.target.value.trim();
+                    handleChange('profitLoss', value === '' ? null : (parseFloat(value) || 0));
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">

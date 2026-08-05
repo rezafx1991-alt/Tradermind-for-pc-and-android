@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { VideoTemplate } from './components/video/VideoTemplate';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
-import { Toaster as SonnerToaster } from 'sonner';
+import { Toaster as SonnerToaster, toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
@@ -32,6 +32,7 @@ import { seedInitialData } from './services/seedService';
 import { useSecurityStore } from './security/useSecurityStore';
 import { NavigationGuardProvider } from './navigation/NavigationGuard';
 import { reminderService } from './services/reminderService';
+import { normalizeExistingTrades } from './services/tradeNormalizationService';
 
 // ── Lazy-loaded pages (code splitting برای بارگذاری سریع‌تر)
 const Dashboard        = lazy(() => import('./pages/Dashboard'));
@@ -232,10 +233,17 @@ function AppContent() {
   const { isEnabled, isLocked } = useSecurityStore();
 
   useEffect(() => {
-    void seedInitialData().catch((error) => {
+    void seedInitialData().then(async () => {
+      const normalized = await normalizeExistingTrades();
+      if (normalized.updated > 0) {
+        toast.success(
+          `${normalized.updated} معامله اصلاح شد؛ ${normalized.closed} معامله بسته و ${normalized.sessionsDetected} سشن تشخیص داده شد.`,
+        );
+      }
+    }).catch((error) => {
       // Seed داده کمکی توسعه است و نباید شکست آن رابط اصلی برنامه را
       // از کار بیندازد.
-      console.error('[TraderMind seed]', error);
+      console.error('[TraderMind startup]', error);
     });
     void reminderService.initialize().catch(error => {
       console.error('[TraderMind reminders]', error);
