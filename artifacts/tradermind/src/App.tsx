@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { VideoTemplate } from './components/video/VideoTemplate';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -253,6 +254,9 @@ function AppContent() {
 
 // ── App اصلی ────────────────────────────────────────────
 function App() {
+  if (window.location.pathname.includes('/video') || window.location.hash === '#/video') {
+    return <VideoTemplate />;
+  }
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
