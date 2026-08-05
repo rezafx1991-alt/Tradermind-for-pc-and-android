@@ -420,6 +420,15 @@ export default function Settings() {
   const [screenshotEstimate, setScreenshotEstimate] = useState<{ count: number; estimatedBytes: number } | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
+  const deviceUtcOffsetMinutes = -new Date().getTimezoneOffset();
+  const brokerDeviceDifferenceMinutes = store.brokerUtcOffsetMinutes - deviceUtcOffsetMinutes;
+  const brokerDeviceDifferenceOptions = Array.from(
+    { length: 209 },
+    (_, index) => (index - 104) * 15,
+  ).filter(difference => {
+    const brokerOffset = deviceUtcOffsetMinutes + difference;
+    return brokerOffset >= -720 && brokerOffset <= 840;
+  });
 
   const refreshStorageInfo = useCallback(async () => {
     const [info, est] = await Promise.all([
@@ -594,29 +603,54 @@ export default function Settings() {
           </Select>
         </SettingRow>
         {store.tradingTimeMode === 'broker' && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Clock className="w-4 h-4 text-primary" />
-              اختلاف ساعت بروکر با UTC
+              اختلاف ساعت بروکر با ساعت گوشی
             </div>
-            <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                min={-720}
-                max={840}
-                step={30}
-                value={store.brokerUtcOffsetMinutes}
-                onChange={e => store.setBrokerUtcOffsetMinutes(Number(e.target.value))}
-                className="w-32"
-                dir="ltr"
-              />
-              <span className="text-sm font-medium" dir="ltr">
-                دقیقه ({formatTradingOffset(store.brokerUtcOffsetMinutes)})
-              </span>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                اختلاف ساعت بروکر نسبت به ساعت فعلی دستگاه را انتخاب کنید؛ این روش در اندروید بدون ورود عدد با کیبورد کار می‌کند.
+              </p>
+              <Select
+                value={String(brokerDeviceDifferenceMinutes)}
+                onValueChange={value => {
+                  const difference = Number(value);
+                  if (Number.isFinite(difference)) {
+                    store.setBrokerUtcOffsetMinutes(deviceUtcOffsetMinutes + difference);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full min-h-11" dir="ltr">
+                  <SelectValue placeholder="اختلاف ساعت را انتخاب کنید" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brokerDeviceDifferenceOptions.map(difference => (
+                    <SelectItem key={difference} value={String(difference)} dir="ltr">
+                      {formatTradingOffset(difference).replace('UTC', '')}
+                      {difference === 0 ? ' — برابر با ساعت گوشی' : difference > 0 ? ' — جلوتر از گوشی' : ' — عقب‌تر از گوشی'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+              <div className="rounded-md bg-background/60 px-2.5 py-2">
+                <span className="text-muted-foreground">ساعت گوشی</span>
+                <strong className="block mt-0.5" dir="ltr">{formatTradingOffset(deviceUtcOffsetMinutes)}</strong>
+              </div>
+              <div className="rounded-md bg-background/60 px-2.5 py-2">
+                <span className="text-muted-foreground">ساعت بروکر</span>
+                <strong className="block mt-0.5" dir="ltr">{formatTradingOffset(store.brokerUtcOffsetMinutes)}</strong>
+              </div>
+              <div className="rounded-md bg-background/60 px-2.5 py-2">
+                <span className="text-muted-foreground">اختلاف انتخاب‌شده</span>
+                <strong className="block mt-0.5" dir="ltr">{formatTradingOffset(brokerDeviceDifferenceMinutes).replace('UTC', '')}</strong>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              برای ساعت بروکر UTC+3:30 عدد <span className="font-semibold" dir="ltr">210</span> را وارد کنید.
-              این تغییر فقط مبنای نمایش و گزارش‌ها را عوض می‌کند و زمان خام معاملات و بکاپ‌ها را تغییر نمی‌دهد.
+              مثال: اگر ساعت گوشی UTC+3:30 و ساعت بروکر UTC+2:00 است، گزینهٔ <span className="font-semibold" dir="ltr">-1:30</span> را انتخاب کنید.
+              این تنظیم فقط مبنای نمایش و گزارش‌ها را عوض می‌کند و زمان خام معاملات و بکاپ‌ها را تغییر نمی‌دهد.
             </p>
           </div>
         )}

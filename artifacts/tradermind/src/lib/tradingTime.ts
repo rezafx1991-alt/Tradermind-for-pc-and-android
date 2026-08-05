@@ -19,7 +19,7 @@ export const DEFAULT_TRADING_TIME_CONFIG: TradingTimeConfig = {
 };
 
 function clampOffset(value: number): number {
-  return Math.max(-720, Math.min(840, Math.round(value / 30) * 30));
+  return Math.max(-720, Math.min(840, Math.round(value / 15) * 15));
 }
 
 export function getTradingTimeConfig(): TradingTimeConfig {

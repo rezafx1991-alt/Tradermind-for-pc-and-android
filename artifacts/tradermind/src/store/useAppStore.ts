@@ -145,7 +145,8 @@ export const useAppStore = create<AppSettings & AppActions>()(
       setDefaultMarket: (defaultMarket) => set({ defaultMarket }),
       setTradingTimeMode: (tradingTimeMode) => set({ tradingTimeMode }),
       setBrokerUtcOffsetMinutes: (brokerUtcOffsetMinutes) => set({
-        brokerUtcOffsetMinutes: Math.max(-720, Math.min(840, Math.round(brokerUtcOffsetMinutes / 30) * 30)),
+        // 15-minute increments support device/broker zones such as UTC+5:45.
+        brokerUtcOffsetMinutes: Math.max(-720, Math.min(840, Math.round(brokerUtcOffsetMinutes / 15) * 15)),
       }),
 
       setAnalysisAutosave: (v) => set({ analysisAutosave: v }),
@@ -190,7 +191,7 @@ export const useAppStore = create<AppSettings & AppActions>()(
         defaultMarket: typeof persisted?.defaultMarket === 'string' ? persisted.defaultMarket : defaults.defaultMarket,
         tradingTimeMode: persisted?.tradingTimeMode === 'broker' ? 'broker' : defaults.tradingTimeMode,
         brokerUtcOffsetMinutes: Number.isFinite(Number(persisted?.brokerUtcOffsetMinutes))
-          ? Math.max(-720, Math.min(840, Math.round(Number(persisted.brokerUtcOffsetMinutes) / 30) * 30))
+          ? Math.max(-720, Math.min(840, Math.round(Number(persisted.brokerUtcOffsetMinutes) / 15) * 15))
           : defaults.brokerUtcOffsetMinutes,
       }),
     }
