@@ -173,6 +173,38 @@
     overflow-x: hidden;
   }
 
+  /* Android WebView can briefly retain a translated fixed drawer's overflow. */
+  html:has(.tradermind-mobile-drawer[data-open="true"]),
+  body:has(.tradermind-mobile-drawer[data-open="true"]) {
+    overflow-x: hidden;
+  }
+
+  /*
+   * The drawer uses an explicit physical right edge because Android WebView
+   * can combine RTL direction and translate-x utilities incorrectly. Keep
+   * the mobile animation here, and force the desktop sidebar open separately
+   * so the mobile store state can never hide the desktop navigation.
+   */
+  .tradermind-mobile-drawer {
+    transform: translate3d(100%, 0, 0);
+    visibility: hidden;
+    transition: transform 300ms ease-in-out, visibility 300ms ease-in-out;
+    will-change: transform;
+    contain: layout paint;
+  }
+  .tradermind-mobile-drawer[data-open="true"] {
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+  }
+  @media (min-width: 768px) {
+    .tradermind-mobile-drawer,
+    .tradermind-mobile-drawer[data-open="true"] {
+      transform: translate3d(0, 0, 0);
+      visibility: visible;
+      transition: none;
+    }
+  }
+
   /* ── Scrollbar سفارشی — فقط دسکتاپ */
   @media (min-width: 768px) {
     ::-webkit-scrollbar { width: 6px; height: 6px; }

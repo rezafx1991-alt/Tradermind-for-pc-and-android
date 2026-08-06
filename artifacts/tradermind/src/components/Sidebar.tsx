@@ -390,6 +390,7 @@ export function Sidebar() {
             z-40
             md:hidden
           "
+          aria-hidden="true"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -399,17 +400,20 @@ export function Sidebar() {
       {/* ── Sidebar دسکتاپ + Drawer موبایل */}
       <aside
         className={cn(
-          "fixed right-0 z-50 w-64 bg-sidebar border-l flex flex-col",
-          "transition-transform duration-300 ease-in-out",
-          "md:translate-x-0",
-          sidebarOpen
-            ? "translate-x-0"
-            : "translate-x-full"
+          "tradermind-mobile-drawer fixed z-50 bg-sidebar border-l flex flex-col"
         )}
         style={{
+          // Keep the drawer inside the visual viewport on Android WebView.
+          // Explicit physical sides avoid RTL + transform rounding bugs.
+          right: 0,
+          left: "auto",
+          width: "min(20rem, 100vw)",
+          maxWidth: "100vw",
           top: "56px",
           height: "calc(100dvh - 56px)",
         }}
+        data-open={sidebarOpen ? "true" : "false"}
+        dir="rtl"
       >
 
 
