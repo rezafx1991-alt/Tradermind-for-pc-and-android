@@ -926,7 +926,7 @@ export const backupService = {
     localStorage.removeItem(STORAGE_KEY_HISTORY);
   },
 
-  // ────────── خروجی Excel ──────────
+  // ────────── خروجی سازگار با Excel ──────────
   async exportToExcel(): Promise<void> {
     const trades = await db.trades.toArray();
 
@@ -953,17 +953,20 @@ export const backupService = {
       'درس‌آموخته': t.lesson ?? '',
     }));
 
-    const XLSX = await import('xlsx');
-    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{}]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'معاملات');
-
-    // عرض ستون‌ها
-    if (rows.length) {
-      ws['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 18 }));
-    }
-
-    const filename = `tradermind_trades_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(wb, filename);
+    const headers = rows.length
+      ? Object.keys(rows[0])
+      : ['تاریخ', 'نماد', 'جهت', 'وضعیت', 'نتیجه'];
+    const escapeCsv = (value: unknown): string => {
+      const text = value == null ? '' : String(value);
+      return `"${text.replaceAll('"', '""')}"`;
+    };
+    const csv = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map(row => headers.map(header => escapeCsv(row[header as keyof typeof row])).join(',')),
+    ].join('\r\n');
+    // BOM ensures Persian text opens correctly in Excel on Windows.
+    const csvBlob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const filename = `tradermind_trades_${new Date().toISOString().slice(0, 10)}.csv`;
+    await deliverFile(csvBlob, filename);
   },
 };

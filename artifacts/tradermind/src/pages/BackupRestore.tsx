@@ -342,22 +342,22 @@ export default function BackupRestore() {
         </CardContent>
       </Card>
 
-      {/* ──── خروجی Excel ──── */}
+       {/* ──── خروجی سازگار با Excel ──── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-emerald-500" />
-            خروجی Excel
+             خروجی Excel / CSV
           </CardTitle>
           <CardDescription>
-            فهرست کامل معاملات خود را به فرمت Excel (.xlsx) دانلود کنید — شامل تمام جزئیات، نتایج و یادداشت‌ها.
+             فهرست کامل معاملات خود را به‌صورت CSV سازگار با Excel و Google Sheets دانلود کنید — شامل تمام جزئیات، نتایج و یادداشت‌ها.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
             <div>
-              <p className="font-medium">دانلود فایل Excel</p>
-              <p className="text-sm text-muted-foreground">مناسب برای آنالیز در Excel یا Google Sheets</p>
+               <p className="font-medium">دانلود فایل CSV</p>
+               <p className="text-sm text-muted-foreground">قابل بازکردن در Excel یا Google Sheets</p>
             </div>
             <Button
               onClick={handleExcelExport}
@@ -367,7 +367,7 @@ export default function BackupRestore() {
             >
               {exportingExcel
                 ? <><RefreshCcw className="w-4 h-4 animate-spin" /> در حال ساخت...</>
-                : <><Download className="w-4 h-4" /> دانلود Excel</>
+                 : <><Download className="w-4 h-4" /> دانلود CSV</>
               }
             </Button>
           </div>
