@@ -35,10 +35,15 @@ export default defineConfig({
     tailwindcss(),
     runtimeErrorOverlay(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Wait for a clean navigation before activating a new chunk set. This
+      // avoids mixing a new index.html with old lazy chunks on mobile/PWA.
+      registerType: 'prompt',
       injectRegister: 'auto',
       manifest: false, // از public/manifest.json استفاده می‌شود
       workbox: {
+        cleanupOutdatedCaches: true,
+        skipWaiting: false,
+        clientsClaim: false,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {

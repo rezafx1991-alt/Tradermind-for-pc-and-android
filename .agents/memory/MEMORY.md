@@ -5,3 +5,4 @@
 - [Imported trade normalization](import-normalization.md) — distinguish blank numeric values from zero and use idempotent session/status inference for imported trades.
 - [Tagged releases](tagged-releases.md) — run release workflows from a pushed v* tag; manual dispatch on main creates a separate main-tagged release.
 - [IME-safe form inputs](ime-safe-form-inputs.md) — controlled numeric fields must preserve raw in-progress text so Persian digits, decimal separators, and keyboard voice input are not erased.
+- [Runtime recovery](runtime-recovery.md) — PWA chunk updates need one-shot cache recovery, while Replay and screenshot features need isolated error boundaries and validated local data.

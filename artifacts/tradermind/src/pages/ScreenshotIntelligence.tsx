@@ -49,7 +49,23 @@ import { cn } from '../lib/utils';
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function uid() { return crypto.randomUUID(); }
+function uid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `screenshot_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('خواندن تصویر نتیجه‌ای نداشت'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('خواندن تصویر ناموفق بود'));
+    reader.onabort = () => reject(new Error('خواندن تصویر لغو شد'));
+    reader.readAsDataURL(file);
+  });
+}
 function safeJson<T>(str: string | null | undefined, fallback: T): T {
   if (!str) return fallback;
   try { return JSON.parse(str) as T; } catch { return fallback; }
@@ -210,8 +226,7 @@ function GalleryTab({ allTrades, onRefresh }: { allTrades: Trade[]; onRefresh: (
           const c = await compressImage(file, { maxWidth: 1600, maxHeight: 1200, quality: 0.85 });
           dataUrl = c.dataUrl;
         } catch {
-          const reader = new FileReader();
-          dataUrl = await new Promise<string>(res => { reader.onload = () => res(reader.result as string); reader.readAsDataURL(file); });
+          dataUrl = await readFileAsDataUrl(file);
         }
         const quality = await assessImageQuality(dataUrl, file.size);
         await saveChartScreenshot({
@@ -230,6 +245,9 @@ function GalleryTab({ allTrades, onRefresh }: { allTrades: Trade[]; onRefresh: (
       await qc.invalidateQueries({ queryKey: ['chart-screenshots'] });
       onRefresh();
       toast.success('اسکرین‌شات‌ها اضافه شدند');
+    } catch (error) {
+      console.error('[ScreenshotIntelligence] upload failed', error);
+      toast.error(error instanceof Error ? error.message : 'آپلود اسکرین‌شات ناموفق بود');
     } finally { setIsProcessing(false); }
   }, [qc, onRefresh]);
 
@@ -416,34 +434,53 @@ function ScreenshotDetailPanel({ ss, allTrades, allScreenshots, onClose, onUpdat
   const annotationImageUrl = useStoredImageUrl(ss);
 
   useEffect(() => {
-    if (tab === 'similar') {
-      findSimilarChartScreenshots(ss.id, { minScore: 20, limit: 8 }).then(setSimilarMatches);
-    }
+    if (tab !== 'similar') return;
+    let cancelled = false;
+    findSimilarChartScreenshots(ss.id, { minScore: 20, limit: 8 })
+      .then(matches => { if (!cancelled) setSimilarMatches(matches); })
+      .catch(error => {
+        if (!cancelled) {
+          console.error('[ScreenshotIntelligence] similarity search failed', error);
+          setSimilarMatches([]);
+          toast.error('جستجوی تصاویر مشابه انجام نشد');
+        }
+      });
+    return () => { cancelled = true; };
   }, [tab, ss.id]);
 
   const save = async () => {
-    await onUpdate({
-      ...form,
-      symbol: form.symbol || null,
-      timeframe: form.timeframe || null,
-      date: form.date || null,
-      time: form.time || null,
-      session: form.session || null,
-      direction: form.direction || null,
-      setup: form.setup || null,
-      notes: form.notes || null,
-      label: form.label || null,
-      patternTags: JSON.stringify(patternTags),
-      customTags: JSON.stringify(customTags),
-      annotations: JSON.stringify(annotations),
-    });
-    setEditing(false);
-    toast.success('ذخیره شد');
+    try {
+      await onUpdate({
+        ...form,
+        symbol: form.symbol || null,
+        timeframe: form.timeframe || null,
+        date: form.date || null,
+        time: form.time || null,
+        session: form.session || null,
+        direction: form.direction || null,
+        setup: form.setup || null,
+        notes: form.notes || null,
+        label: form.label || null,
+        patternTags: JSON.stringify(patternTags),
+        customTags: JSON.stringify(customTags),
+        annotations: JSON.stringify(annotations),
+      });
+      setEditing(false);
+      toast.success('ذخیره شد');
+    } catch (error) {
+      console.error('[ScreenshotIntelligence] screenshot update failed', error);
+      toast.error('ذخیره اطلاعات اسکرین‌شات انجام نشد');
+    }
   };
 
   const saveAnnotations = async () => {
-    await onUpdate({ annotations: JSON.stringify(annotations) });
-    toast.success('حاشیه‌نویسی ذخیره شد');
+    try {
+      await onUpdate({ annotations: JSON.stringify(annotations) });
+      toast.success('حاشیه‌نویسی ذخیره شد');
+    } catch (error) {
+      console.error('[ScreenshotIntelligence] annotation update failed', error);
+      toast.error('ذخیره حاشیه‌نویسی انجام نشد');
+    }
   };
 
   const toggleTag = (tag: string) => {
@@ -1463,6 +1500,9 @@ function BriefingTab({ allTrades }: { allTrades: Trade[] }) {
     try {
       const result = await generateVisualBriefing(symbol || null, setup || null, selectedTags, allTrades);
       setBriefing(result);
+    } catch (error) {
+      console.error('[ScreenshotIntelligence] briefing generation failed', error);
+      toast.error('تولید بریفینگ بصری انجام نشد');
     } finally {
       setIsLoading(false);
     }
