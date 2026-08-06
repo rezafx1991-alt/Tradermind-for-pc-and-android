@@ -5,7 +5,9 @@ import { persist } from 'zustand/middleware';
 // انواع
 // ─────────────────────────────────────────────
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type FontSize = 'sm' | 'md' | 'lg';
+export type FontSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+export type ColorTheme = 'blue' | 'violet' | 'emerald' | 'amber' | 'rose';
+export type TextColor = 'auto' | `#${string}`;
 export type Language = 'fa'; // در آینده: | 'en'
 export type TradingTimeMode = 'device' | 'broker';
 
@@ -13,6 +15,8 @@ export interface AppSettings {
   // ظاهر
   theme: ThemeMode;
   fontSize: FontSize;
+  colorTheme: ColorTheme;
+  textColor: TextColor;
   language: Language;
 
   // Sidebar
@@ -58,6 +62,8 @@ interface AppActions {
   toggleSidebar: () => void;
   setTheme: (theme: ThemeMode) => void;
   setFontSize: (size: FontSize) => void;
+  setColorTheme: (theme: ColorTheme) => void;
+  setTextColor: (color: TextColor) => void;
   setLanguage: (lang: Language) => void;
   setAppName: (name: string) => void;
   setDefaultAccountId: (id: string | null) => void;
@@ -96,6 +102,8 @@ interface AppActions {
 const defaults: AppSettings = {
   theme: 'dark',
   fontSize: 'md',
+  colorTheme: 'blue',
+  textColor: 'auto',
   language: 'fa',
   sidebarOpen: false,
   appName: 'TraderMind',
@@ -137,6 +145,8 @@ export const useAppStore = create<AppSettings & AppActions>()(
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
       setTheme: (theme) => set({ theme }),
       setFontSize: (fontSize) => set({ fontSize }),
+      setColorTheme: (colorTheme) => set({ colorTheme }),
+      setTextColor: (textColor) => set({ textColor }),
       setLanguage: (language) => set({ language }),
       setAppName: (appName) => set({ appName }),
       setDefaultAccountId: (defaultAccountId) => set({ defaultAccountId }),
@@ -190,6 +200,16 @@ export const useAppStore = create<AppSettings & AppActions>()(
         theme: ['light', 'dark', 'system'].includes(persisted?.theme)
           ? persisted.theme
           : defaults.theme,
+        fontSize: ['xs', 'sm', 'md', 'lg', 'xl'].includes(persisted?.fontSize)
+          ? persisted.fontSize
+          : defaults.fontSize,
+        colorTheme: ['blue', 'violet', 'emerald', 'amber', 'rose'].includes(persisted?.colorTheme)
+          ? persisted.colorTheme
+          : defaults.colorTheme,
+        textColor: persisted?.textColor === 'auto'
+          || (typeof persisted?.textColor === 'string' && /^#[0-9a-f]{6}$/i.test(persisted.textColor))
+          ? persisted.textColor
+          : defaults.textColor,
         defaultAccountId: typeof persisted?.defaultAccountId === 'string' ? persisted.defaultAccountId : defaults.defaultAccountId,
         defaultTradingBoxId: typeof persisted?.defaultTradingBoxId === 'string' ? persisted.defaultTradingBoxId : defaults.defaultTradingBoxId,
         defaultSymbol: typeof persisted?.defaultSymbol === 'string' ? persisted.defaultSymbol : defaults.defaultSymbol,

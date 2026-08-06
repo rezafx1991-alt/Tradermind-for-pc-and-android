@@ -132,7 +132,8 @@
   --secondary: 222 20% 15%;
   --secondary-foreground: 215 20% 90%;
   --muted: 222 20% 15%;
-  --muted-foreground: 215 16% 60%;
+  /* Keep secondary text readable on dark cards and sidebars. */
+  --muted-foreground: 215 22% 72%;
   --accent: 222 20% 15%;
   --accent-foreground: 215 20% 90%;
   --destructive: 0 84% 60%;
@@ -148,9 +149,11 @@
 
 /* ──── اندازه متن ──── */
 :root { font-size: 16px; }
+[data-font-size="xs"] { font-size: 13px; }
 [data-font-size="sm"] { font-size: 14px; }
 [data-font-size="md"] { font-size: 16px; }
 [data-font-size="lg"] { font-size: 18px; }
+[data-font-size="xl"] { font-size: 20px; }
 
 @layer base {
   * {

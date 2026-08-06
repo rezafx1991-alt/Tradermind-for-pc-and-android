@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { useLocation } from "wouter";
 import {
-  Moon, Sun, Monitor, Type, Globe, Activity, BookOpen, Clock,
+  Moon, Sun, Monitor, Type, Palette, Globe, Activity, BookOpen, Clock,
   LayoutDashboard, HardDrive, Info, Database, Trash2,
   Plus, X, Download, Upload, WifiOff, ShieldCheck, Lock, LockOpen,
   Bell, RefreshCw, Smile, KeyRound, Eye, EyeOff, CheckCircle2, AlertTriangle, SlidersHorizontal
@@ -383,7 +383,7 @@ export default function Settings() {
   // PART 8 / Prompt 3 — selector برای جلوگیری از re-render غیرضروری
   const store = useAppStore(
     useShallow(s => ({
-      theme: s.theme, fontSize: s.fontSize,
+       theme: s.theme, fontSize: s.fontSize, colorTheme: s.colorTheme, textColor: s.textColor,
       analysisAutosave: s.analysisAutosave, analysisShowNextStep: s.analysisShowNextStep,
       analysisPhaseSummary: s.analysisPhaseSummary, analysisConfirmPhase: s.analysisConfirmPhase,
       analysisProgressBar: s.analysisProgressBar,
@@ -397,7 +397,8 @@ export default function Settings() {
       defaultSymbol: s.defaultSymbol, defaultMarket: s.defaultMarket,
       tradingTimeMode: s.tradingTimeMode, brokerUtcOffsetMinutes: s.brokerUtcOffsetMinutes,
       // setters
-      setTheme: s.setTheme, setFontSize: s.setFontSize,
+       setTheme: s.setTheme, setFontSize: s.setFontSize,
+       setColorTheme: s.setColorTheme, setTextColor: s.setTextColor,
       setAnalysisAutosave: s.setAnalysisAutosave, setAnalysisShowNextStep: s.setAnalysisShowNextStep,
       setAnalysisPhaseSummary: s.setAnalysisPhaseSummary, setAnalysisConfirmPhase: s.setAnalysisConfirmPhase,
       setAnalysisProgressBar: s.setAnalysisProgressBar,
@@ -504,15 +505,19 @@ export default function Settings() {
         </div>
         <div>
           <p className="text-sm font-medium mb-2">{t.settings.fontSize}</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {[
+              { value: 'xs', label: 'خیلی کوچک', cls: 'text-xs' },
               { value: 'sm', label: t.settings.fontSizeSm, cls: 'text-xs' },
               { value: 'md', label: t.settings.fontSizeMd, cls: 'text-sm' },
               { value: 'lg', label: t.settings.fontSizeLg, cls: 'text-base' },
+              { value: 'xl', label: 'خیلی بزرگ', cls: 'text-lg' },
             ].map(({ value, label, cls }) => (
               <button key={value} onClick={() => store.setFontSize(value as any)}
                 className={cn(
-                  'flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 font-medium transition-all', cls,
+                  'flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 font-medium transition-all',
+                  value === 'xl' && 'col-span-2 sm:col-span-1',
+                  cls,
                   store.fontSize === value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border hover:border-primary/40 text-muted-foreground'
@@ -520,6 +525,74 @@ export default function Settings() {
                 <Type className="w-3.5 h-3.5" />{label}
               </button>
             ))}
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <p className="text-sm font-medium">رنگ اصلی برنامه</p>
+              <p className="text-xs text-muted-foreground mt-0.5">رنگ دکمه‌ها، لینک‌ها، نمودارها و وضعیت فعال منو</p>
+            </div>
+            <Palette className="w-4 h-4 text-primary shrink-0" />
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {[
+              { value: 'blue', label: 'آبی', color: '#3b82f6' },
+              { value: 'violet', label: 'بنفش', color: '#8b5cf6' },
+              { value: 'emerald', label: 'سبز', color: '#10b981' },
+              { value: 'amber', label: 'کهربایی', color: '#f59e0b' },
+              { value: 'rose', label: 'رز', color: '#f43f5e' },
+            ].map(({ value, label, color }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => store.setColorTheme(value as any)}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 text-xs font-medium transition-all',
+                  store.colorTheme === value
+                    ? 'border-primary bg-primary/10 text-foreground'
+                    : 'border-border hover:border-primary/40 text-muted-foreground'
+                )}
+                aria-label={`انتخاب رنگ ${label}`}
+              >
+                <span className="h-6 w-6 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">رنگ متن برنامه</p>
+              <p className="text-xs text-muted-foreground mt-0.5">برای خوانایی بهتر متن‌ها را در حالت تاریک روشن‌تر کنید</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={store.textColor === 'auto' ? (store.theme === 'light' ? '#1a202c' : '#e2e8f0') : store.textColor}
+                onChange={e => store.setTextColor(e.target.value as `#${string}`)}
+                className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-1"
+                aria-label="انتخاب رنگ متن"
+              />
+              <button
+                type="button"
+                onClick={() => store.setTextColor('auto')}
+                className={cn(
+                  'rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                  store.textColor === 'auto'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/40'
+                )}
+              >
+                خودکار
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full border border-border" style={{ backgroundColor: store.textColor === 'auto' ? 'hsl(var(--foreground))' : store.textColor }} />
+            <span className="text-sm">نمونه متن اصلی</span>
+            <span className="text-xs text-muted-foreground">متن کمکی برای بررسی کنتراست</span>
           </div>
         </div>
       </Section>
