@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from "../store/useAppStore";
@@ -116,6 +117,23 @@ export function Sidebar() {
   const { sidebarOpen, setSidebarOpen, appName } = useAppStore(
     useShallow(s => ({ sidebarOpen: s.sidebarOpen, setSidebarOpen: s.setSidebarOpen, appName: s.appName }))
   );
+
+  // Drawer موبایل نباید از اجرای قبلی یا حالت پس‌زمینهٔ Android به صفحه
+  // نشت کند. در دسکتاپ این state روی نمایش Sidebar اثری ندارد.
+  useEffect(() => {
+    setSidebarOpen(false);
+
+    const closeWhenHidden = () => {
+      if (document.hidden) setSidebarOpen(false);
+    };
+    document.addEventListener("visibilitychange", closeWhenHidden);
+    return () => document.removeEventListener("visibilitychange", closeWhenHidden);
+  }, [setSidebarOpen]);
+
+  // تغییر مسیر از هر راهی (Back، deep link یا انتخاب آیتم) Drawer را می‌بندد.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location, setSidebarOpen]);
 
 
 

@@ -173,14 +173,19 @@ export const useAppStore = create<AppSettings & AppActions>()(
       setDashShowLastJournal: (v) => set({ dashShowLastJournal: v }),
       setDashShowAdherence: (v) => set({ dashShowAdherence: v }),
 
-      resetToDefaults: () => set({ ...defaults, sidebarOpen: true }),
+      // وضعیت باز بودن منوی موبایل موقتی است و نباید بین اجراهای برنامه
+      // یا بعد از بازگشت Android از حالت پس‌زمینه باقی بماند.
+      resetToDefaults: () => set({ ...defaults, sidebarOpen: false }),
     }),
     {
       name: 'tradermind-app-storage',
-      // ادغام هوشمند — مقادیر جدید با مقادیر پیش‌فرض ترکیب می‌شوند
+      // ادغام هوشمند — مقادیر جدید با مقادیر پیش‌فرض ترکیب می‌شوند.
+      // sidebarOpen عمدی persist نمی‌شود؛ Drawer موبایل باید هر بار بسته
+      // شروع شود تا روی محتوای صفحه، مخصوصاً داشبورد، باقی نماند.
       merge: (persisted: any, current) => ({
         ...current,
         ...persisted,
+        sidebarOpen: false,
         // backward compat: اگر theme قدیمی بود، معتبر باشد
         theme: ['light', 'dark', 'system'].includes(persisted?.theme)
           ? persisted.theme
@@ -194,6 +199,11 @@ export const useAppStore = create<AppSettings & AppActions>()(
           ? Math.max(-720, Math.min(840, Math.round(Number(persisted.brokerUtcOffsetMinutes) / 15) * 15))
           : defaults.brokerUtcOffsetMinutes,
       }),
+      // این state فقط برای همان اجرای فعلی رابط کاربری است.
+      partialize: (state) => {
+        const { sidebarOpen: _sidebarOpen, ...persisted } = state;
+        return persisted;
+      },
     }
   )
 );
