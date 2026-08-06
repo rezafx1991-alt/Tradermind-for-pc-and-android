@@ -407,7 +407,9 @@ export function Sidebar() {
           // Explicit physical sides avoid RTL + transform rounding bugs.
           right: 0,
           left: "auto",
-          width: "min(20rem, 100vw)",
+          // Layout reserves md:pr-64 (16rem) on desktop; keep both values
+          // identical so the module menu never covers the content column.
+          width: "min(16rem, 100vw)",
           maxWidth: "100vw",
           top: "56px",
           height: "calc(100dvh - 56px)",
